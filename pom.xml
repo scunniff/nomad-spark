@@ -172,7 +172,9 @@
     <!-- for now, not running scalafmt as part of default verify pipeline -->
     <scalafmt.skip>true</scalafmt.skip>
     <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-    <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
+    <fasterxml.jackson.version>2.7.9</fasterxml.jackson.version>
+    <fasterxml.jackson-module-scala.version>2.7.9</fasterxml.jackson-module-scala.version>
+    <fasterxml.jackson.databind.version>2.7.9</fasterxml.jackson.databind.version>
     <snappy.version>1.1.7.5</snappy.version>
     <netlib.java.version>1.1.2</netlib.java.version>
     <commons-codec.version>1.10</commons-codec.version>
@@ -3140,6 +3142,14 @@
       <id>kubernetes-integration-tests</id>
       <modules>
         <module>resource-managers/kubernetes/integration-tests</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>nomad</id>
+      <modules>
+        <module>resource-managers/nomad/test-apps</module>
+        <module>resource-managers/nomad</module>
       </modules>
     </profile>
 
