@@ -191,12 +191,17 @@ case class MemoryStream[A : Encoder](
     s"MemoryStream[${truncatedString(output, ",", SQLConf.get.maxToStringFields)}]"
   }
 
+  override def setOffsetRange(start: Optional[OffsetV2], end: Optional[OffsetV2]): Unit = {
+    synchronized {
+      startOffset = start.orElse(LongOffset(-1)).asInstanceOf[LongOffset]
+      endOffset = end.orElse(currentOffset).asInstanceOf[LongOffset]
+    }
+  }
+
   override def deserializeOffset(json: String): OffsetV2 = LongOffset(json.toLong)
 
-  override def initialOffset: OffsetV2 = LongOffset(-1)
-
-  override def latestOffset(): OffsetV2 = {
-    if (currentOffset.offset == -1) null else currentOffset
+  override def getStartOffset: OffsetV2 = synchronized {
+    if (startOffset.offset == -1) null else startOffset
   }
 
   override def planInputPartitions(start: OffsetV2, end: OffsetV2): Array[InputPartition] = {
@@ -274,12 +279,10 @@ case class MemoryStream[A : Encoder](
 }
 
 
-class MemoryStreamInputPartition(val records: Array[UnsafeRow]) extends InputPartition
-
-object MemoryStreamReaderFactory extends PartitionReaderFactory {
-  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
-    val records = partition.asInstanceOf[MemoryStreamInputPartition].records
-    new PartitionReader[InternalRow] {
+class MemoryStreamInputPartition(records: Array[UnsafeRow])
+  extends InputPartition[InternalRow] {
+  override def createPartitionReader(): InputPartitionReader[InternalRow] = {
+    new InputPartitionReader[InternalRow] {
       private var currentIndex = -1
 
       override def next(): Boolean = {

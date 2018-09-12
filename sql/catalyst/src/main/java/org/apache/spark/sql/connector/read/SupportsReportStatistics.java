@@ -33,7 +33,7 @@ import org.apache.spark.annotation.Evolving;
 public interface SupportsReportStatistics extends Scan {
 
   /**
-   * Returns the estimated statistics of this data source scan.
+   * Returns the estimated statistics of this data source.
    */
   Statistics estimateStatistics();
 }

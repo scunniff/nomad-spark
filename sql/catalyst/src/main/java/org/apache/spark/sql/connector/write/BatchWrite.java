@@ -20,7 +20,15 @@ package org.apache.spark.sql.connector.write;
 import org.apache.spark.annotation.Evolving;
 
 /**
- * An interface that defines how to write the data to data source for batch processing.
+ * A data source writer that is returned by
+ * {@link WriteSupport#createWriter(String, StructType, SaveMode, DataSourceOptions)}/
+ * {@link StreamWriteSupport#createStreamWriter(
+ * String, StructType, OutputMode, DataSourceOptions)}.
+ * It can mix in various writing optimization interfaces to speed up the data saving. The actual
+ * writing logic is delegated to {@link DataWriter}.
+ *
+ * If an exception was throw when applying any of these writing optimizations, the action will fail
+ * and no Spark job will be submitted.
  *
  * The writing procedure is:
  *   1. Create a writer factory by {@link #createBatchWriterFactory(PhysicalWriteInfo)}, serialize

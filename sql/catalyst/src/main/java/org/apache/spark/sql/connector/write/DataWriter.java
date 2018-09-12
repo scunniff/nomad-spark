@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.spark.annotation.Evolving;
 
 /**
- * A data writer returned by {@link DataWriterFactory#createWriter(int, long)} and is
+ * A data writer returned by {@link DataWriterFactory#createDataWriter(int, long, long)} and is
  * responsible for writing data for an input RDD partition.
  *
  * One Spark task has one exclusive data writer, so there is no thread-safe concern.

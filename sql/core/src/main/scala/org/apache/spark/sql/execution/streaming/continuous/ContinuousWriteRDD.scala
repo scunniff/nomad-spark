@@ -32,7 +32,7 @@ import org.apache.spark.util.Utils
  *
  * We keep repeating prev.compute() and writing new epochs until the query is shut down.
  */
-class ContinuousWriteRDD(var prev: RDD[InternalRow], writerFactory: StreamingDataWriterFactory)
+class ContinuousWriteRDD(var prev: RDD[InternalRow], writeTask: DataWriterFactory[InternalRow])
     extends RDD[Unit](prev) {
 
   override val partitioner = prev.partitioner
@@ -51,7 +51,7 @@ class ContinuousWriteRDD(var prev: RDD[InternalRow], writerFactory: StreamingDat
       Utils.tryWithSafeFinallyAndFailureCallbacks(block = {
         try {
           val dataIterator = prev.compute(split, context)
-          dataWriter = writerFactory.createWriter(
+          dataWriter = writeTask.createDataWriter(
             context.partitionId(),
             context.taskAttemptId(),
             EpochTracker.getCurrentEpoch.get)

@@ -85,7 +85,7 @@ case class StreamingExecutionRelation(
 
 // We have to pack in the V1 data source as a shim, for the case when a source implements
 // continuous processing (which is always V2) but only has V1 microbatch support. We don't
-// know at read time whether the query is continuous or not, so we need to be able to
+// know at read time whether the query is conntinuous or not, so we need to be able to
 // swap a V1 relation back in.
 /**
  * Used to link a [[TableProvider]] into a streaming

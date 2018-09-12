@@ -17,11 +17,13 @@
 
 package org.apache.spark.sql.execution.streaming.sources
 
+import java.util.Optional
 import java.util.concurrent.TimeUnit
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.streaming.{Offset, SparkDataStream}
@@ -131,6 +133,17 @@ class RateStreamProviderSuite extends StreamTest {
     )
   }
 
+  test("microbatch - set offset") {
+    withTempDir { temp =>
+      val reader = new RateStreamMicroBatchReader(DataSourceOptions.empty(), temp.getCanonicalPath)
+      val startOffset = LongOffset(0L)
+      val endOffset = LongOffset(1L)
+      reader.setOffsetRange(Optional.of(startOffset), Optional.of(endOffset))
+      assert(reader.getStartOffset() == startOffset)
+      assert(reader.getEndOffset() == endOffset)
+    }
+  }
+
   test("microbatch - infer offsets") {
     withTempDir { temp =>
       val stream = new RateStreamMicroBatchStream(
@@ -187,7 +200,7 @@ class RateStreamProviderSuite extends StreamTest {
           buf
         }
 
-      assert(readData.map(_.getLong(1)).sorted === 0.until(33).toArray)
+      assert(readData.map(_.getLong(1)).sorted == Range(0, 33))
     }
   }
 
@@ -298,7 +311,7 @@ class RateStreamProviderSuite extends StreamTest {
   }
 
   test("user-specified schema given") {
-    val exception = intercept[UnsupportedOperationException] {
+    val exception = intercept[AnalysisException] {
       spark.readStream
         .format("rate")
         .schema(spark.range(1).schema)
@@ -321,8 +334,7 @@ class RateStreamProviderSuite extends StreamTest {
           .asInstanceOf[RateStreamOffset]
           .partitionToValueAndRunTimeMs(t.partitionIndex)
           .runTimeMs
-        val r = readerFactory.createReader(t)
-          .asInstanceOf[RateStreamContinuousPartitionReader]
+        val r = t.createPartitionReader().asInstanceOf[RateStreamContinuousInputPartitionReader]
         for (rowIndex <- 0 to 9) {
           r.next()
           data.append(r.get())

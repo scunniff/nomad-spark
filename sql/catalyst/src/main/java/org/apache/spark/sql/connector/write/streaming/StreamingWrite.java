@@ -62,10 +62,9 @@ public interface StreamingWrite {
    * {@link DataWriter#commit()}.
    *
    * If this method fails (by throwing an exception), this writing job is considered to have been
-   * failed, and the execution engine will attempt to call
-   * {@link #abort(long, WriterCommitMessage[])}.
+   * failed, and the execution engine will attempt to call {@link #abort(WriterCommitMessage[])}.
    *
-   * The execution engine may call `commit` multiple times for the same epoch in some circumstances.
+   * The execution engine may call commit() multiple times for the same epoch in some circumstances.
    * To support exactly-once data semantics, implementations must ensure that multiple commits for
    * the same epoch are idempotent.
    */
@@ -73,8 +72,7 @@ public interface StreamingWrite {
 
   /**
    * Aborts this writing job because some data writers are failed and keep failing when retried, or
-   * the Spark job fails with some unknown reasons, or {@link #commit(long, WriterCommitMessage[])}
-   * fails.
+   * the Spark job fails with some unknown reasons, or {@link #commit(WriterCommitMessage[])} fails.
    *
    * If this method fails (by throwing an exception), the underlying data source may require manual
    * cleanup.
@@ -86,4 +84,14 @@ public interface StreamingWrite {
    * clean up the data left by data writers.
    */
   void abort(long epochId, WriterCommitMessage[] messages);
+
+  default void commit(WriterCommitMessage[] messages) {
+    throw new UnsupportedOperationException(
+        "Commit without epoch should not be called with StreamWriter");
+  }
+
+  default void abort(WriterCommitMessage[] messages) {
+    throw new UnsupportedOperationException(
+        "Abort without epoch should not be called with StreamWriter");
+  }
 }

@@ -167,7 +167,7 @@ case class MemoryWriterFactory(schema: StructType)
       partitionId: Int,
       taskId: Long,
       epochId: Long): DataWriter[InternalRow] = {
-    createWriter(partitionId, taskId)
+    new MemoryDataWriter(partitionId, outputMode, schema)
   }
 }
 

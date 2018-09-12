@@ -23,6 +23,7 @@ import java.util.Calendar
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.concurrent.GuardedBy
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
 import org.apache.spark.internal.Logging
@@ -34,9 +35,9 @@ import org.apache.spark.sql.execution.streaming.LongOffset
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
- * A MicroBatchReadSupport that reads text lines through a TCP socket, designed only for tutorials
- * and debugging. This MicroBatchReadSupport will *not* work in production applications due to
- * multiple reasons, including no support for fault recovery.
+ * A MicroBatchReader that reads text lines through a TCP socket, designed only for tutorials and
+ * debugging. This MicroBatchReader will *not* work in production applications due to multiple
+ * reasons, including no support for fault recovery.
  */
 class TextSocketMicroBatchStream(host: String, port: Int, numPartitions: Int)
   extends MicroBatchStream with Logging {
@@ -99,9 +100,18 @@ class TextSocketMicroBatchStream(host: String, port: Int, numPartitions: Int)
     readThread.start()
   }
 
-  override def initialOffset(): Offset = LongOffset(-1L)
+  override def setOffsetRange(start: Optional[Offset], end: Optional[Offset]): Unit = synchronized {
+    startOffset = start.orElse(LongOffset(-1L))
+    endOffset = end.orElse(currentOffset)
+  }
 
-  override def latestOffset(): Offset = currentOffset
+  override def getStartOffset(): Offset = {
+    Option(startOffset).getOrElse(throw new IllegalStateException("start offset not set"))
+  }
+
+  override def getEndOffset(): Offset = {
+    Option(endOffset).getOrElse(throw new IllegalStateException("end offset not set"))
+  }
 
   override def deserializeOffset(json: String): Offset = {
     LongOffset(json.toLong)
@@ -127,8 +137,12 @@ class TextSocketMicroBatchStream(host: String, port: Int, numPartitions: Int)
       slices(idx % numPartitions).append(r)
     }
 
-    slices.map(TextSocketInputPartition)
-  }
+    (0 until numPartitions).map { i =>
+      val slice = slices(i)
+      new InputPartition[InternalRow] {
+        override def createPartitionReader(): InputPartitionReader[InternalRow] =
+          new InputPartitionReader[InternalRow] {
+            private var currentIdx = -1
 
   override def createReaderFactory(): PartitionReaderFactory =
     (partition: InputPartition) => {

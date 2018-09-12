@@ -324,7 +324,7 @@ class StreamingDataSourceV2Suite extends StreamTest {
 
     // Ensure we create a V1 sink with the config. Note the config is a comma separated
     // list, including other fake entries.
-    val fullSinkName = classOf[FakeWriteSupportProviderV1Fallback].getName
+    val fullSinkName = "org.apache.spark.sql.streaming.sources.FakeWriteV1Fallback"
     withSQLConf(SQLConf.DISABLED_V2_STREAMING_WRITERS.key -> s"a,b,c,test,$fullSinkName,d,e") {
       testPositiveCaseWithQuery(
         "fake-read-microbatch-continuous", "fake-write-v1-fallback", Trigger.Once()) { v1Query =>

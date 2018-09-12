@@ -22,6 +22,7 @@ import java.nio.ByteBuffer
 import java.nio.channels.ServerSocketChannel
 import java.nio.charset.StandardCharsets
 import java.sql.Timestamp
+import java.util.Optional
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit._
 
@@ -49,9 +50,14 @@ class TextSocketStreamSuite extends StreamTest with SharedSparkSession {
       serverThread.join()
       serverThread = null
     }
+    if (batchReader != null) {
+      batchReader.stop()
+      batchReader = null
+    }
   }
 
   private var serverThread: ServerThread = null
+  private var batchReader: MicroBatchReader = null
 
   case class AddSocketData(data: String*) extends AddData {
     override def addData(query: Option[StreamExecution]): (SparkDataStream, Offset) = {
@@ -313,7 +319,7 @@ class TextSocketStreamSuite extends StreamTest with SharedSparkSession {
       }
       partitions.foreach {
         case t: TextSocketContinuousInputPartition =>
-          val r = readerFactory.createReader(t).asInstanceOf[TextSocketContinuousPartitionReader]
+          val r = t.createPartitionReader().asInstanceOf[TextSocketContinuousInputPartitionReader]
           for (i <- 0 until numRecords / 2) {
             r.next()
             offsets.append(r.getOffset().asInstanceOf[ContinuousRecordPartitionOffset].offset)

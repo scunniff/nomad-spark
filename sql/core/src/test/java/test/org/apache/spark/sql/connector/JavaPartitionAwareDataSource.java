@@ -19,6 +19,7 @@ package test.org.apache.spark.sql.connector;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.spark.sql.catalyst.InternalRow;
 import org.apache.spark.sql.catalyst.expressions.GenericInternalRow;
@@ -81,48 +82,45 @@ public class JavaPartitionAwareDataSource implements TestingV2Source {
     public boolean satisfy(Distribution distribution) {
       if (distribution instanceof ClusteredDistribution) {
         String[] clusteredCols = ((ClusteredDistribution) distribution).clusteredColumns;
-        return Arrays.asList(clusteredCols).contains("i");
+        return Arrays.asList(clusteredCols).contains("a");
       }
 
       return false;
     }
   }
 
-  static class SpecificInputPartition implements InputPartition {
-    int[] i;
-    int[] j;
+  static class SpecificInputPartition implements InputPartition<InternalRow>,
+    InputPartitionReader<InternalRow> {
+
+    private int[] i;
+    private int[] j;
+    private int current = -1;
 
     SpecificInputPartition(int[] i, int[] j) {
       assert i.length == j.length;
       this.i = i;
       this.j = j;
     }
-  }
-
-  static class SpecificReaderFactory implements PartitionReaderFactory {
 
     @Override
-    public PartitionReader<InternalRow> createReader(InputPartition partition) {
-      SpecificInputPartition p = (SpecificInputPartition) partition;
-      return new PartitionReader<InternalRow>() {
-        private int current = -1;
+    public boolean next() throws IOException {
+      current += 1;
+      return current < i.length;
+    }
 
-        @Override
-        public boolean next() throws IOException {
-          current += 1;
-          return current < p.i.length;
-        }
+    @Override
+    public InternalRow get() {
+      return new GenericInternalRow(new Object[] {i[current], j[current]});
+    }
 
-        @Override
-        public InternalRow get() {
-          return new GenericInternalRow(new Object[] {p.i[current], p.j[current]});
-        }
+    @Override
+    public void close() throws IOException {
 
-        @Override
-        public void close() throws IOException {
+    }
 
-        }
-      };
+    @Override
+    public InputPartitionReader<InternalRow> createPartitionReader() {
+      return this;
     }
   }
 }

@@ -19,7 +19,10 @@ package org.apache.spark.sql.execution.streaming.sources
 
 import java.io._
 import java.nio.charset.StandardCharsets
+import java.util.Optional
 import java.util.concurrent.TimeUnit
+
+import scala.collection.JavaConverters._
 
 import org.apache.commons.io.IOUtils
 
@@ -99,18 +102,20 @@ class RateStreamMicroBatchStream(
 
   @volatile private var lastTimeMs: Long = creationTimeMs
 
-  override def initialOffset(): Offset = LongOffset(0L)
+  private var start: LongOffset = _
+  private var end: LongOffset = _
 
-  override def latestOffset(): Offset = {
-    val now = clock.getTimeMillis()
-    if (lastTimeMs < now) {
-      lastTimeMs = now
-    }
-    LongOffset(TimeUnit.MILLISECONDS.toSeconds(lastTimeMs - creationTimeMs))
-  }
+  override def readSchema(): StructType = SCHEMA
 
-  override def deserializeOffset(json: String): Offset = {
-    LongOffset(json.toLong)
+  override def setOffsetRange(start: Optional[Offset], end: Optional[Offset]): Unit = {
+    this.start = start.orElse(LongOffset(0L)).asInstanceOf[LongOffset]
+    this.end = end.orElse {
+      val now = clock.getTimeMillis()
+      if (lastTimeMs < now) {
+        lastTimeMs = now
+      }
+      LongOffset(TimeUnit.MILLISECONDS.toSeconds(lastTimeMs - creationTimeMs))
+    }.asInstanceOf[LongOffset]
   }
 
 
@@ -132,7 +137,7 @@ class RateStreamMicroBatchStream(
       s"rangeStart: $rangeStart, rangeEnd: $rangeEnd")
 
     if (rangeStart == rangeEnd) {
-      return Array.empty
+      return List.empty.asJava
     }
 
     val localStartTimeMs = creationTimeMs + TimeUnit.SECONDS.toMillis(startSeconds)
@@ -158,29 +163,26 @@ class RateStreamMicroBatchStream(
     s"numPartitions=${options.getOrDefault(NUM_PARTITIONS, "default")}"
 }
 
-case class RateStreamMicroBatchInputPartition(
+class RateStreamMicroBatchInputPartition(
     partitionId: Int,
     numPartitions: Int,
     rangeStart: Long,
     rangeEnd: Long,
     localStartTimeMs: Long,
-    relativeMsPerValue: Double) extends InputPartition
+    relativeMsPerValue: Double) extends InputPartition[InternalRow] {
 
-object RateStreamMicroBatchReaderFactory extends PartitionReaderFactory {
-  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
-    val p = partition.asInstanceOf[RateStreamMicroBatchInputPartition]
-    new RateStreamMicroBatchPartitionReader(p.partitionId, p.numPartitions, p.rangeStart,
-      p.rangeEnd, p.localStartTimeMs, p.relativeMsPerValue)
-  }
+  override def createPartitionReader(): InputPartitionReader[InternalRow] =
+    new RateStreamMicroBatchInputPartitionReader(partitionId, numPartitions, rangeStart, rangeEnd,
+      localStartTimeMs, relativeMsPerValue)
 }
 
-class RateStreamMicroBatchPartitionReader(
+class RateStreamMicroBatchInputPartitionReader(
     partitionId: Int,
     numPartitions: Int,
     rangeStart: Long,
     rangeEnd: Long,
     localStartTimeMs: Long,
-    relativeMsPerValue: Double) extends PartitionReader[InternalRow] {
+    relativeMsPerValue: Double) extends InputPartitionReader[InternalRow] {
   private var count: Long = 0
 
   override def next(): Boolean = {

@@ -53,4 +53,12 @@ public interface InputPartition extends Serializable {
   default String[] preferredLocations() {
     return new String[0];
   }
+
+  /**
+   * Returns an input partition reader to do the actual reading work.
+   *
+   * If this method fails (by throwing an exception), the corresponding Spark task would fail and
+   * get retried until hitting the maximum retry times.
+   */
+  InputPartitionReader<T> createPartitionReader();
 }

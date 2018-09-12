@@ -31,8 +31,8 @@ import org.apache.spark.sql.connector.write.streaming.StreamingDataWriterFactory
  * Note that, because it sends all rows to the driver, this factory will generally be unsuitable
  * for production-quality sinks. It's intended for use in tests.
  */
-case object PackedRowWriterFactory extends StreamingDataWriterFactory {
-  override def createWriter(
+case object PackedRowWriterFactory extends DataWriterFactory[InternalRow] {
+  override def createDataWriter(
       partitionId: Int,
       taskId: Long,
       epochId: Long): DataWriter[InternalRow] = {

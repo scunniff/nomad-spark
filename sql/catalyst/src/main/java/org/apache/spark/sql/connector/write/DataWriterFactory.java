@@ -29,7 +29,7 @@ import org.apache.spark.sql.catalyst.InternalRow;
  * creating and initializing the actual data writer at executor side.
  *
  * Note that, the writer factory will be serialized and sent to executors, then the data writer
- * will be created on executors and do the actual writing. So this interface must be
+ * will be created on executors and do the actual writing. So {@link DataWriterFactory} must be
  * serializable and {@link DataWriter} doesn't need to be.
  *
  * @since 3.0.0
@@ -43,16 +43,19 @@ public interface DataWriterFactory extends Serializable {
    * are responsible for defensive copies if necessary, e.g. copy the data before buffer it in a
    * list.
    *
-   * If this method fails (by throwing an exception), the corresponding Spark write task would fail
-   * and get retried until hitting the maximum retry times.
+   * If this method fails (by throwing an exception), the action will fail and no Spark job will be
+   * submitted.
    *
    * @param partitionId A unique id of the RDD partition that the returned writer will process.
    *                    Usually Spark processes many RDD partitions at the same time,
    *                    implementations should use the partition id to distinguish writers for
    *                    different partitions.
-   * @param taskId The task id returned by {@link TaskContext#taskAttemptId()}. Spark may run
-   *               multiple tasks for the same partition (due to speculation or task failures,
-   *               for example).
+   * @param taskId A unique identifier for a task that is performing the write of the partition
+   *               data. Spark may run multiple tasks for the same partition (due to speculation
+   *               or task failures, for example).
+   * @param epochId A monotonically increasing id for streaming queries that are split in to
+   *                discrete periods of execution. For non-streaming queries,
+   *                this ID will always be 0.
    */
-  DataWriter<InternalRow> createWriter(int partitionId, long taskId);
+  DataWriter<T> createDataWriter(int partitionId, long taskId, long epochId);
 }

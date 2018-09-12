@@ -38,14 +38,15 @@ import org.apache.spark.util.ThreadUtils
  * offsets across epochs. Each compute() should call the next() method here until null is returned.
  */
 class ContinuousQueuedDataReader(
-    partitionIndex: Int,
-    reader: ContinuousPartitionReader[InternalRow],
-    schema: StructType,
+    partition: ContinuousDataSourceRDDPartition,
     context: TaskContext,
     dataQueueSize: Int,
     epochPollIntervalMs: Long) extends Closeable {
+  private val reader = partition.inputPartition.createPartitionReader()
+
   // Important sequencing - we must get our starting point before the provider threads start running
-  private var currentOffset: PartitionOffset = reader.getOffset
+  private var currentOffset: PartitionOffset =
+    ContinuousDataSourceRDD.getContinuousReader(reader).getOffset
 
   /**
    * The record types in the read buffer.
@@ -66,7 +67,7 @@ class ContinuousQueuedDataReader(
   epochMarkerExecutor.scheduleWithFixedDelay(
     epochMarkerGenerator, 0, epochPollIntervalMs, TimeUnit.MILLISECONDS)
 
-  private val dataReaderThread = new DataReaderThread(schema)
+  private val dataReaderThread = new DataReaderThread
   dataReaderThread.setDaemon(true)
   dataReaderThread.start()
 
@@ -113,7 +114,7 @@ class ContinuousQueuedDataReader(
     currentEntry match {
       case EpochMarker =>
         epochCoordEndpoint.send(ReportPartitionOffset(
-          partitionIndex, EpochTracker.getCurrentEpoch.get, currentOffset))
+          partition.index, EpochTracker.getCurrentEpoch.get, currentOffset))
         null
       case ContinuousRow(row, offset) =>
         currentOffset = offset
@@ -128,16 +129,16 @@ class ContinuousQueuedDataReader(
 
   /**
    * The data component of [[ContinuousQueuedDataReader]]. Pushes (row, offset) to the queue when
-   * a new row arrives to the [[ContinuousPartitionReader]].
+   * a new row arrives to the [[InputPartitionReader]].
    */
-  class DataReaderThread(schema: StructType) extends Thread(
+  class DataReaderThread extends Thread(
       s"continuous-reader--${context.partitionId()}--" +
         s"${context.getLocalProperty(ContinuousExecution.EPOCH_COORDINATOR_ID_KEY)}") with Logging {
     @volatile private[continuous] var failureReason: Throwable = _
-    private val toUnsafe = UnsafeProjection.create(schema)
 
     override def run(): Unit = {
       TaskContext.setTaskContext(context)
+      val baseReader = ContinuousDataSourceRDD.getContinuousReader(reader)
       try {
         while (!shouldStop()) {
           if (!reader.next()) {
@@ -149,9 +150,8 @@ class ContinuousQueuedDataReader(
               return
             }
           }
-          // `InternalRow#copy` may not be properly implemented, for safety we convert to unsafe row
-          // before copy here.
-          queue.put(ContinuousRow(toUnsafe(reader.get()).copy(), reader.getOffset))
+
+          queue.put(ContinuousRow(reader.get().copy(), baseReader.getOffset))
         }
       } catch {
         case _: InterruptedException =>

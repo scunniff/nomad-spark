@@ -49,13 +49,13 @@ public class JavaAdvancedDataSourceV2 implements TestingV2Source {
     private Filter[] filters = new Filter[0];
 
     @Override
-    public void pruneColumns(StructType requiredSchema) {
-      this.requiredSchema = requiredSchema;
+    public StructType readSchema() {
+      return requiredSchema;
     }
 
     @Override
-    public StructType readSchema() {
-      return requiredSchema;
+    public void pruneColumns(StructType requiredSchema) {
+      this.requiredSchema = requiredSchema;
     }
 
     @Override
@@ -142,43 +142,45 @@ public class JavaAdvancedDataSourceV2 implements TestingV2Source {
     }
   }
 
-  static class AdvancedReaderFactory implements PartitionReaderFactory {
-    StructType requiredSchema;
+  static class JavaAdvancedInputPartition implements InputPartition<InternalRow>,
+      InputPartitionReader<InternalRow> {
+    private int start;
+    private int end;
+    private StructType requiredSchema;
 
-    AdvancedReaderFactory(StructType requiredSchema) {
+    JavaAdvancedInputPartition(int start, int end, StructType requiredSchema) {
+      this.start = start;
+      this.end = end;
       this.requiredSchema = requiredSchema;
     }
 
     @Override
-    public PartitionReader<InternalRow> createReader(InputPartition partition) {
-      JavaRangeInputPartition p = (JavaRangeInputPartition) partition;
-      return new PartitionReader<InternalRow>() {
-        private int current = p.start - 1;
+    public InputPartitionReader<InternalRow> createPartitionReader() {
+      return new JavaAdvancedInputPartition(start - 1, end, requiredSchema);
+    }
 
-        @Override
-        public boolean next() throws IOException {
-          current += 1;
-          return current < p.end;
+    @Override
+    public boolean next() {
+      start += 1;
+      return start < end;
+    }
+
+    @Override
+    public InternalRow get() {
+      Object[] values = new Object[requiredSchema.size()];
+      for (int i = 0; i < values.length; i++) {
+        if ("i".equals(requiredSchema.apply(i).name())) {
+          values[i] = start;
+        } else if ("j".equals(requiredSchema.apply(i).name())) {
+          values[i] = -start;
         }
+      }
+      return new GenericInternalRow(values);
+    }
 
-        @Override
-        public InternalRow get() {
-          Object[] values = new Object[requiredSchema.size()];
-          for (int i = 0; i < values.length; i++) {
-            if ("i".equals(requiredSchema.apply(i).name())) {
-              values[i] = current;
-            } else if ("j".equals(requiredSchema.apply(i).name())) {
-              values[i] = -current;
-            }
-          }
-          return new GenericInternalRow(values);
-        }
+    @Override
+    public void close() throws IOException {
 
-        @Override
-        public void close() throws IOException {
-
-        }
-      };
     }
   }
 }
