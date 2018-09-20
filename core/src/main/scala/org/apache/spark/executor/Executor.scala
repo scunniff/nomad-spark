@@ -153,6 +153,29 @@ private[spark] class Executor(
   // for fetching remote cached RDD blocks, so need to make sure it uses the right classloader too.
   env.serializerManager.setDefaultClassLoader(replClassLoader)
 
+  private val executorPlugins: Seq[ExecutorPlugin] = {
+    val pluginNames = conf.get(EXECUTOR_PLUGINS)
+    if (pluginNames.nonEmpty) {
+      logDebug(s"Initializing the following plugins: ${pluginNames.mkString(", ")}")
+
+      // Plugins need to load using a class loader that includes the executor's user classpath
+      val pluginList: Seq[ExecutorPlugin] =
+        Utils.withContextClassLoader(replClassLoader) {
+          val plugins = Utils.loadExtensions(classOf[ExecutorPlugin], pluginNames, conf)
+          plugins.foreach { plugin =>
+            plugin.init()
+            logDebug(s"Successfully loaded plugin " + plugin.getClass().getCanonicalName())
+          }
+          plugins
+        }
+
+      logDebug("Finished initializing plugins")
+      pluginList
+    } else {
+      Nil
+    }
+  }
+
   // Max size of direct result. If task result is bigger than this, we use the block manager
   // to send the result back.
   private val maxDirectResultSize = Math.min(
