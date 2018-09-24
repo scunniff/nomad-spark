@@ -88,7 +88,7 @@ trait FakeStreamingWriteTable extends Table with SupportsWrite {
     Set(STREAMING_WRITE).asJava
   }
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = {
-    new FakeWriteBuilder
+    new FakeWriteBuildert
   }
 }
 
@@ -244,6 +244,11 @@ class StreamingDataSourceV2Suite extends StreamTest {
     super.beforeAll()
     val fakeCheckpoint = Utils.createTempDir()
     spark.conf.set(SQLConf.CHECKPOINT_LOCATION.key, fakeCheckpoint.getCanonicalPath)
+  }
+
+  override def afterEach(): Unit = {
+    LastReadOptions.clear()
+    LastWriteOptions.clear()
   }
 
   override def afterEach(): Unit = {
