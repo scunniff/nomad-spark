@@ -86,7 +86,6 @@ class SparkSession(SparkConversionMixin):
 
         _lock = RLock()
         _options = {}
-        _sc = None
 
         @since(2.0)
         def config(self, key=None, value=None, conf=None):
@@ -142,11 +141,6 @@ class SparkSession(SparkConversionMixin):
             for Hive SerDes, and Hive user-defined functions.
             """
             return self.config("spark.sql.catalogImplementation", "hive")
-
-        def _sparkContext(self, sc):
-            with self._lock:
-                self._sc = sc
-                return self
 
         @since(2.0)
         def getOrCreate(self):
