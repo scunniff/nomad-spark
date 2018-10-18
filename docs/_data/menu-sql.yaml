@@ -150,24 +150,24 @@
         - text: Data Retrieval(Queries)
           url: sql-ref-syntax-qry.html
           subitems:
-            - text: SELECT 
-              url: sql-ref-syntax-qry-select.html 
+            - text: SELECT
+              url: sql-ref-syntax-qry-select.html
               subitems:
-                - text: WHERE Clause 
+                - text: WHERE Clause
                   url: sql-ref-syntax-qry-select-where.html
-                - text: GROUP BY Clause 
+                - text: GROUP BY Clause
                   url: sql-ref-syntax-qry-select-groupby.html
-                - text: HAVING Clause 
+                - text: HAVING Clause
                   url: sql-ref-syntax-qry-select-having.html
-                - text: ORDER BY Clause 
+                - text: ORDER BY Clause
                   url: sql-ref-syntax-qry-select-orderby.html
-                - text: SORT BY Clause 
+                - text: SORT BY Clause
                   url: sql-ref-syntax-qry-select-sortby.html
-                - text: CLUSTER BY Clause 
+                - text: CLUSTER BY Clause
                   url: sql-ref-syntax-qry-select-clusterby.html
-                - text: DISTRIBUTE BY Clause 
+                - text: DISTRIBUTE BY Clause
                   url: sql-ref-syntax-qry-select-distribute-by.html
-                - text: LIMIT Clause 
+                - text: LIMIT Clause
                   url: sql-ref-syntax-qry-select-limit.html
                 - text: Common Table Expression
                   url: sql-ref-syntax-qry-select-cte.html
@@ -200,7 +200,7 @@
           subitems:
             - text: ANALYZE
               url: sql-ref-syntax-aux-analyze.html
-              subitems: 
+              subitems:
                 - text: ANALYZE TABLE
                   url: sql-ref-syntax-aux-analyze-table.html
             - text: CACHE
@@ -230,7 +230,7 @@
             - text: SHOW
               url: sql-ref-syntax-aux-show.html
               subitems:
-                - text: SHOW COLUMNS 
+                - text: SHOW COLUMNS
                   url: sql-ref-syntax-aux-show-columns.html
                 - text: SHOW CREATE TABLE
                   url: sql-ref-syntax-aux-show-create-table.html
@@ -251,7 +251,7 @@
             - text: CONFIGURATION MANAGEMENT
               url: sql-ref-syntax-aux-conf-mgmt.html
               subitems:
-                - text: SET 
+                - text: SET
                   url: sql-ref-syntax-aux-conf-mgmt-set.html
                 - text: RESET
                   url: sql-ref-syntax-aux-conf-mgmt-reset.html
