@@ -1470,6 +1470,39 @@ class FsHistoryProviderSuite extends SparkFunSuite with Matchers with Logging {
     }
   }
 
+  test("check in-progress event logs absolute length") {
+    val path = new Path("testapp.inprogress")
+    val provider = new FsHistoryProvider(createTestConf())
+    val mockedProvider = spy(provider)
+    val mockedFs = mock(classOf[FileSystem])
+    val in = mock(classOf[FSDataInputStream])
+    val dfsIn = mock(classOf[DFSInputStream])
+    when(mockedProvider.fs).thenReturn(mockedFs)
+    when(mockedFs.open(path)).thenReturn(in)
+    when(in.getWrappedStream).thenReturn(dfsIn)
+    when(dfsIn.getFileLength).thenReturn(200)
+    // FileStatus.getLen is more than logInfo fileSize
+    var fileStatus = new FileStatus(200, false, 0, 0, 0, path)
+    var logInfo = new LogInfo(path.toString, 0, Some("appId"), Some("attemptId"), 100)
+    assert(mockedProvider.shouldReloadLog(logInfo, fileStatus))
+
+    fileStatus = new FileStatus()
+    fileStatus.setPath(path)
+    // DFSInputStream.getFileLength is more than logInfo fileSize
+    logInfo = new LogInfo(path.toString, 0, Some("appId"), Some("attemptId"), 100)
+    assert(mockedProvider.shouldReloadLog(logInfo, fileStatus))
+    // DFSInputStream.getFileLength is equal to logInfo fileSize
+    logInfo = new LogInfo(path.toString, 0, Some("appId"), Some("attemptId"), 200)
+    assert(!mockedProvider.shouldReloadLog(logInfo, fileStatus))
+    // in.getWrappedStream returns other than DFSInputStream
+    val bin = mock(classOf[BufferedInputStream])
+    when(in.getWrappedStream).thenReturn(bin)
+    assert(!mockedProvider.shouldReloadLog(logInfo, fileStatus))
+    // fs.open throws exception
+    when(mockedFs.open(path)).thenThrow(new IOException("Throwing intentionally"))
+    assert(!mockedProvider.shouldReloadLog(logInfo, fileStatus))
+  }
+
   /**
    * Asks the provider to check for logs and calls a function to perform checks on the updated
    * app list. Example:
