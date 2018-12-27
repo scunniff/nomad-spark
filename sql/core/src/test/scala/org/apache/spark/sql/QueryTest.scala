@@ -307,7 +307,7 @@ object QueryTest extends Assertions {
   def prepareRow(row: Row): Row = {
     Row.fromSeq(row.toSeq.map {
       case null => null
-      case bd: java.math.BigDecimal => BigDecimal(bd)
+      case d: java.math.BigDecimal => BigDecimal(d)
       // Equality of WrappedArray differs for AnyVal and AnyRef in Scala 2.12.2+
       case seq: Seq[_] => seq.map {
         case b: java.lang.Byte => b.byteValue
