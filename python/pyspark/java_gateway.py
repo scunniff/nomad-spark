@@ -47,6 +47,18 @@ def launch_gateway(conf=None, popen_kwargs=None):
         stdout/stderr).
     :return:
     """
+    return _launch_gateway(conf)
+
+
+def _launch_gateway(conf=None, insecure=False):
+    """
+    launch jvm gateway
+    :param conf: spark configuration passed to spark-submit
+    :param insecure: True to create an insecure gateway; only for testing
+    :return: a JVM gateway
+    """
+    if insecure and os.environ.get("SPARK_TESTING", "0") != "1":
+        raise ValueError("creating insecure gateways is only for testing")
     if "PYSPARK_GATEWAY_PORT" in os.environ:
         gateway_port = int(os.environ["PYSPARK_GATEWAY_PORT"])
         gateway_secret = os.environ["PYSPARK_GATEWAY_SECRET"]
@@ -80,6 +92,8 @@ def launch_gateway(conf=None, popen_kwargs=None):
 
             env = dict(os.environ)
             env["_PYSPARK_DRIVER_CONN_INFO_PATH"] = conn_info_file
+            if insecure:
+                env["_PYSPARK_CREATE_INSECURE_GATEWAY"] = "1"
 
             # Launch the Java gateway.
             popen_kwargs = {} if popen_kwargs is None else popen_kwargs
