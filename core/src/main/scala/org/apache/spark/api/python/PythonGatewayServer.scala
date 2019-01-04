@@ -33,28 +33,8 @@ private[spark] object PythonGatewayServer extends Logging {
   initializeLogIfNecessary(true)
 
   def main(args: Array[String]): Unit = {
-<<<<<<< HEAD
     val sparkConf = new SparkConf()
     val gatewayServer: Py4JServer = new Py4JServer(sparkConf)
-=======
-    val secret = Utils.createSecret(new SparkConf())
-
-    // Start a GatewayServer on an ephemeral port. Make sure the callback client is configured
-    // with the same secret, in case the app needs callbacks from the JVM to the underlying
-    // python processes.
-    val localhost = InetAddress.getLoopbackAddress()
-    val builder = new GatewayServer.GatewayServerBuilder()
-      .javaPort(0)
-      .javaAddress(localhost)
-      .callbackClient(GatewayServer.DEFAULT_PYTHON_PORT, localhost, secret)
-    if (sys.env.getOrElse("_PYSPARK_CREATE_INSECURE_GATEWAY", "0") != "1") {
-      builder.authToken(secret)
-    } else {
-      assert(sys.env.getOrElse("SPARK_TESTING", "0") == "1",
-        "Creating insecure Java gateways only allowed for testing")
-    }
-    val gatewayServer: GatewayServer = builder.build()
->>>>>>> [SPARK-26019][PYSPARK] Allow insecure py4j gateways
 
     gatewayServer.start()
     val boundPort: Int = gatewayServer.getListeningPort
