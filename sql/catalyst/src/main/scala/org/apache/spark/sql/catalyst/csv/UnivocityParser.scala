@@ -234,6 +234,14 @@ class UnivocityParser(
     }
   }
 
+  private val doParse = if (requiredSchema.nonEmpty) {
+    (input: String) => convert(tokenizer.parseLine(input))
+  } else {
+    // If `columnPruning` enabled and partition attributes scanned only,
+    // `schema` gets empty.
+    (_: String) => InternalRow.empty
+  }
+
   /**
    * Parses a single CSV string and turns it into either one resulting row or no row (if the
    * the record is malformed).
