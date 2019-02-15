@@ -73,6 +73,17 @@ private[spark] class KubernetesClusterSchedulerBackend(
     conf.getOption("spark.app.id").map(_.toString).getOrElse(super.applicationId)
   }
 
+  /**
+   * Get an application ID associated with the job.
+   * This returns the string value of spark.app.id if set, otherwise
+   * the locally-generated ID from the superclass.
+   *
+   * @return The application ID
+   */
+  override def applicationId(): String = {
+    conf.getOption("spark.app.id").map(_.toString).getOrElse(super.applicationId)
+  }
+
   override def start(): Unit = {
     super.start()
     podAllocator.setTotalExpectedExecutors(initialExecutors)
