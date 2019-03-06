@@ -739,7 +739,11 @@ private[spark] class TaskSetManager(
       // Mark successful and stop if all the tasks have succeeded.
       successful(index) = true
       if (tasksSuccessful == numTasks) {
-        isZombie = true
+        // clean up finished partitions for the stage when the active TaskSetManager succeed
+        if (!isZombie) {
+          sched.stageIdToFinishedPartitions -= stageId
+          isZombie = true
+        }
       }
     } else {
       logInfo("Ignoring task-finished event for " + info.id + " in stage " + taskSet.id +
@@ -762,7 +766,10 @@ private[spark] class TaskSetManager(
         tasksSuccessful += 1
         successful(index) = true
         if (tasksSuccessful == numTasks) {
-          isZombie = true
+          if (!isZombie) {
+            sched.stageIdToFinishedPartitions -= stageId
+            isZombie = true
+          }
         }
         maybeFinishTaskSet()
       }
