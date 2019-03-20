@@ -629,6 +629,22 @@ abstract class OrcQueryTest extends OrcTest {
       }
     }
   }
+
+  test("SPARK-27160 Predicate pushdown correctness on DecimalType for ORC") {
+    withTempPath { dir =>
+      withSQLConf(SQLConf.ORC_FILTER_PUSHDOWN_ENABLED.key -> "true") {
+        val path = dir.getCanonicalPath
+        Seq(BigDecimal(0.1), BigDecimal(0.2), BigDecimal(-0.3))
+          .toDF("x").write.orc(path)
+        val df = spark.read.orc(path)
+        checkAnswer(df.filter("x >= 0.1"), Seq(Row(0.1), Row(0.2)))
+        checkAnswer(df.filter("x > 0.1"), Seq(Row(0.2)))
+        checkAnswer(df.filter("x <= 0.15"), Seq(Row(0.1), Row(-0.3)))
+        checkAnswer(df.filter("x < 0.1"), Seq(Row(-0.3)))
+        checkAnswer(df.filter("x == 0.2"), Seq(Row(0.2)))
+      }
+    }
+  }
 }
 
 abstract class OrcQuerySuite extends OrcQueryTest with SharedSparkSession {
