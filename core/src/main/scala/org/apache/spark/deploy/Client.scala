@@ -62,10 +62,6 @@ private class ClientEndpoint(
    private val lostMasters = new HashSet[RpcAddress]
    private var activeMasterEndpoint: RpcEndpointRef = null
 
-  private def getProperty(key: String, conf: SparkConf): Option[String] = {
-    sys.props.get(key).orElse(conf.getOption(key))
-  }
-
   override def onStart(): Unit = {
     driverArgs.cmd match {
       case "launch" =>
@@ -87,7 +83,6 @@ private class ClientEndpoint(
         val extraJavaOptsConf = config.DRIVER_JAVA_OPTIONS.key
         val extraJavaOpts = getProperty(extraJavaOptsConf, conf)
           .map(Utils.splitCommandString).getOrElse(Seq.empty)
-
         val sparkJavaOpts = Utils.sparkJavaOpts(conf)
         val javaOpts = sparkJavaOpts ++ extraJavaOpts
         val command = new Command(mainClass,
