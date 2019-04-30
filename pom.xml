@@ -751,7 +751,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${fasterxml.jackson.version}</version>
+        <version>${fasterxml.jackson.databind.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -763,7 +763,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.module</groupId>
         <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-        <version>${fasterxml.jackson.version}</version>
+        <version>${fasterxml.jackson.databind.version}</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
