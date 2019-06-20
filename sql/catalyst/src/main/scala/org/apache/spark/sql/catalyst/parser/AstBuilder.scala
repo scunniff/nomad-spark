@@ -1598,6 +1598,25 @@ class AstBuilder(conf: SQLConf) extends SqlBaseBaseVisitor[AnyRef] with Logging 
   }
 
   /**
+   * Create a Trim expression.
+   */
+  override def visitTrim(ctx: TrimContext): Expression = withOrigin(ctx) {
+    val srcStr = expression(ctx.srcStr)
+    val trimStr = Option(ctx.trimStr).map(expression)
+    ctx.trimOption.getType match {
+      case SqlBaseParser.BOTH =>
+        StringTrim(srcStr, trimStr)
+      case SqlBaseParser.LEADING =>
+        StringTrimLeft(srcStr, trimStr)
+      case SqlBaseParser.TRAILING =>
+        StringTrimRight(srcStr, trimStr)
+      case other =>
+        throw new ParseException("Function trim doesn't support with " +
+          s"type $other. Please use BOTH, LEADING or TRAILING as trim type", ctx)
+    }
+  }
+
+  /**
    * Create a (windowed) Function expression.
    */
   override def visitFunctionCall(ctx: FunctionCallContext): Expression = withOrigin(ctx) {
