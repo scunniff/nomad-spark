@@ -212,14 +212,15 @@ class UnsafeArraySuite extends SparkFunSuite {
   }
 
   test("unsafe java serialization") {
-    val offset = 32
-    val data = new Array[Byte](1024)
-    Platform.putLong(data, offset, 1)
-    val arrayData = new UnsafeArrayData()
-    arrayData.pointTo(data, offset, data.length)
-    arrayData.setLong(0, 19285)
     val ser = new JavaSerializer(new SparkConf).newInstance()
-    val arrayDataSer = ser.deserialize[UnsafeArrayData](ser.serialize(arrayData))
+    val arrayDataSer = ser.deserialize[UnsafeArrayData](ser.serialize(serialArray))
+    assert(arrayDataSer.getLong(0) == 19285)
+    assert(arrayDataSer.getBaseObject.asInstanceOf[Array[Byte]].length == 1024)
+  }
+
+  test("unsafe Kryo serialization") {
+    val ser = new KryoSerializer(new SparkConf).newInstance()
+    val arrayDataSer = ser.deserialize[UnsafeArrayData](ser.serialize(serialArray))
     assert(arrayDataSer.getLong(0) == 19285)
     assert(arrayDataSer.getBaseObject.asInstanceOf[Array[Byte]].length == 1024)
   }
