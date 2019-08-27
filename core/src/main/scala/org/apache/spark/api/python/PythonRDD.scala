@@ -508,6 +508,29 @@ private[spark] object PythonRDD extends Logging {
     SocketAuthServer.serveToStream(threadName, authHelper)(writeFunc)
   }
 
+  /**
+   * Create a socket server object and background thread to execute the writeFunc
+   * with the given OutputStream.
+   *
+   * This is the same as serveToStream, only it returns a server object that
+   * can be used to sync in Python.
+   */
+  private[spark] def serveToStreamWithSync(
+      threadName: String)(writeFunc: OutputStream => Unit): Array[Any] = {
+
+    val handleFunc = (sock: Socket) => {
+      val out = new BufferedOutputStream(sock.getOutputStream())
+      Utils.tryWithSafeFinally {
+        writeFunc(out)
+      } {
+        out.close()
+      }
+    }
+
+    val server = new SocketFuncServer(authHelper, threadName, handleFunc)
+    Array(server.port, server.secret, server)
+  }
+
   private def getMergedConf(confAsMap: java.util.HashMap[String, String],
       baseConf: Configuration): Configuration = {
     val conf = PythonHadoopUtil.mapToConf(confAsMap)
