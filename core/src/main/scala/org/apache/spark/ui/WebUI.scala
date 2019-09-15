@@ -65,6 +65,10 @@ private[spark] abstract class WebUI(
     handlers.map(new DelegatingServletContextHandler(_))
   }
 
+  def getDelegatingHandlers: Seq[DelegatingServletContextHandler] = {
+    handlers.map(new DelegatingServletContextHandler(_))
+  }
+
   /** Attaches a tab to this UI, along with all of its attached pages. */
   def attachTab(tab: WebUITab): Unit = {
     tab.pages.foreach(attachPage)
@@ -100,6 +104,14 @@ private[spark] abstract class WebUI(
   def attachHandler(handler: ServletContextHandler): Unit = synchronized {
     handlers += handler
     serverInfo.foreach(_.addHandler(handler, securityManager))
+  }
+
+  /** Attaches a handler to this UI. */
+  def attachHandler(contextPath: String, httpServlet: HttpServlet, pathSpec: String): Unit = {
+    val ctx = new ServletContextHandler()
+    ctx.setContextPath(contextPath)
+    ctx.addServlet(new ServletHolder(httpServlet), pathSpec)
+    attachHandler(ctx)
   }
 
   /** Attaches a handler to this UI. */
