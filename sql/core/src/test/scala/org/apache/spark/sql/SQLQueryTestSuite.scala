@@ -150,7 +150,7 @@ class SQLQueryTestSuite extends QueryTest with SharedSparkSession with SQLHelper
     // Fewer shuffle partitions to speed up testing.
     .set(SQLConf.SHUFFLE_PARTITIONS, 4)
 
-  override def sparkConf: SparkConf = super.sparkConf
+  protected override def sparkConf: SparkConf = super.sparkConf
     // Fewer shuffle partitions to speed up testing.
     .set(SQLConf.SHUFFLE_PARTITIONS, 4)
 
