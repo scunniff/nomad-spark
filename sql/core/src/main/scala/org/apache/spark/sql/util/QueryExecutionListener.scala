@@ -114,6 +114,9 @@ class ExecutionListenerManager private[sql](session: SparkSession, loadExtension
     listenerBus.listeners.asScala.toArray
   }
 
+  /** Only exposed for testing. */
+  private[sql] def listListeners(): Array[QueryExecutionListener] = listeners.toArray
+
   /**
    * Get an identical copy of this listener manager.
    */
