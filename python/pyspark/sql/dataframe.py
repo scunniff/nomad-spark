@@ -124,7 +124,7 @@ class DataFrame(PandasMapOpsMixin, PandasConversionMixin):
 
     @since(1.3)
     def registerTempTable(self, name):
-        """Registers this DataFrame as a temporary table using the given name.
+        """Registers this :class:`DataFrame` as a temporary table using the given name.
 
         The lifetime of this temporary table is tied to the :class:`SparkSession`
         that was used to create this :class:`DataFrame`.
