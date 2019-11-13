@@ -51,6 +51,7 @@ which contains two batches of two objects:
 """
 
 import sys
+from distutils.version import LooseVersion
 from itertools import chain, product
 import marshal
 import struct
