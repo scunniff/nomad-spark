@@ -69,6 +69,8 @@ class JacksonParser(
     legacyFormat = FAST_DATE_FORMAT,
     isParsing = true)
 
+  @transient private lazy val timestampParser = new TimestampParser(options.timestampFormat)
+
   /**
    * Create a converter which converts the JSON documents held by the `JsonParser`
    * to a value according to a desired schema. This is a wrapper for the method

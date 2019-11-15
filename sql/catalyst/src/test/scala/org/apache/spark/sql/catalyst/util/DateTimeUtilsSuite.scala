@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatest.Matchers
 
+import org.apache.commons.lang3.time.FastDateFormat
+
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.plans.SQLHelper
 import org.apache.spark.sql.catalyst.util.DateTimeConstants._
