@@ -82,6 +82,10 @@ private[spark] class Executor(
 
   private val conf = env.conf
 
+  private val executorShutdown = new AtomicBoolean(false)
+  ShutdownHookManager.addShutdownHook(
+    () => stop()
+  )
   // No ip or host:port - just hostname
   Utils.checkHost(executorHostname)
   // must not have port specified.
