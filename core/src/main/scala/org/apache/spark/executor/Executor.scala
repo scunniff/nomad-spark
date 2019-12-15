@@ -24,7 +24,6 @@ import java.net.{URI, URL}
 import java.nio.ByteBuffer
 import java.util.Properties
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
@@ -82,10 +81,6 @@ private[spark] class Executor(
 
   private val conf = env.conf
 
-  private val executorShutdown = new AtomicBoolean(false)
-  ShutdownHookManager.addShutdownHook(
-    () => stop()
-  )
   // No ip or host:port - just hostname
   Utils.checkHost(executorHostname)
   // must not have port specified.
@@ -315,9 +310,9 @@ private[spark] class Executor(
       Utils.withContextClassLoader(replClassLoader) {
         plugins.foreach(_.shutdown())
       }
-      if (!isLocal) {
-        env.stop()
-      }
+    }
+    if (!isLocal) {
+      env.stop()
     }
   }
 
