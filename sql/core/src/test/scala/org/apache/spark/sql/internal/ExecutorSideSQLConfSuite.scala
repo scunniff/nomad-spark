@@ -188,6 +188,40 @@ class ExecutorSideSQLConfSuite extends SparkFunSuite with SQLTestUtils {
       assert(checks2.forall(_.toSeq == Seq(true, true)))
     }
   }
+
+  test("SPARK-30556 propagate local properties to subquery execution thread") {
+    withSQLConf(StaticSQLConf.SUBQUERY_MAX_THREAD_THRESHOLD.key -> "1") {
+      withTempView("l", "m", "n") {
+        Seq(true).toDF().createOrReplaceTempView("l")
+        val confKey = "spark.sql.y"
+
+        def createDataframe(confKey: String, confValue: String): Dataset[Boolean] = {
+          Seq(true)
+            .toDF()
+            .mapPartitions { _ =>
+              TaskContext.get.getLocalProperty(confKey) == confValue match {
+                case true => Iterator(true)
+                case false => Iterator.empty
+              }
+            }
+        }
+
+        // set local configuration and assert
+        val confValue1 = "e"
+        createDataframe(confKey, confValue1).createOrReplaceTempView("m")
+        spark.sparkContext.setLocalProperty(confKey, confValue1)
+        val result1 = sql("SELECT value, (SELECT MAX(*) FROM m) x FROM l").collect
+        assert(result1.forall(_.getBoolean(1)))
+
+        // change the conf value and assert again
+        val confValue2 = "f"
+        createDataframe(confKey, confValue2).createOrReplaceTempView("n")
+        spark.sparkContext.setLocalProperty(confKey, confValue2)
+        val result2 = sql("SELECT value, (SELECT MAX(*) FROM n) x FROM l").collect
+        assert(result2.forall(_.getBoolean(1)))
+      }
+    }
+  }
 }
 
 case class SQLConfAssertPlan(confToCheck: Seq[(String, String)]) extends LeafExecNode {
