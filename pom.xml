@@ -289,12 +289,10 @@
       </snapshots>
     </repository>
     <repository>
-      <id>central_without_mirror</id>
       <!--
-        This is used as a fallback when a mirror to `central` fail.
-        For example, when we use Google Maven Central in GitHub Action as a mirror of `central`,
-        this will be used when Google Maven Central is out of sync due to its late sync cycle.
+        This is used as a fallback when the first try fails.
       -->
+      <id>central</id>
       <name>Maven Repository</name>
       <url>https://repo.maven.apache.org/maven2</url>
       <releases>
