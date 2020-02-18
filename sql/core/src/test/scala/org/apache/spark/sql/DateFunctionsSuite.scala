@@ -900,5 +900,7 @@ class DateFunctionsSuite extends QueryTest with SharedSparkSession {
 
     checkTrunc("SECOND", "1961-04-12 00:01:02")
     checkTrunc("MINUTE", "1961-04-12 00:01:00")
+    checkTrunc("HOUR", "1961-04-12 00:00:00")
+    checkTrunc("DAY", "1961-04-12 00:00:00")
   }
 }
