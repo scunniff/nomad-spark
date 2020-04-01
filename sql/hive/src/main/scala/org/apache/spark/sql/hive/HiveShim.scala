@@ -22,6 +22,7 @@ import java.lang.reflect.Method
 import java.rmi.server.UID
 
 import scala.collection.JavaConverters._
+import scala.language.existentials
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
