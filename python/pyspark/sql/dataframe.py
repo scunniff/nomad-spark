@@ -27,6 +27,7 @@ else:
     from itertools import imap as map
     from cgi import escape as html_escape
 
+from collections import Counter
 import warnings
 
 from pyspark import copy_func, since, _NoValue
