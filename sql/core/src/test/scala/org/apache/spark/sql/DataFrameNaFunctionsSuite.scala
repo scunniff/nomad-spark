@@ -289,7 +289,6 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSparkSession {
     val df = createDF()
     // If columns are specified with "*", they are ignored.
     checkAnswer(df.na.fill("new name", Seq("*")), df.collect())
-    checkAnswer(df.na.drop("any", Seq("*")), df.collect())
   }
 
   test("drop with col(*)") {
