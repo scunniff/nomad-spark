@@ -701,4 +701,9 @@ class DateTimeUtilsSuite extends SparkFunSuite with Matchers with SQLHelper {
         "2019-10-14 09:39:07")
     }
   }
+
+  test("toMillis") {
+    assert(DateTimeUtils.toMillis(-9223372036844776001L) === -9223372036844777L)
+    assert(DateTimeUtils.toMillis(-157700927876544L) === -157700927877L)
+  }
 }
