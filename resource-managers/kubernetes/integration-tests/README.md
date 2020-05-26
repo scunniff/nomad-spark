@@ -21,6 +21,8 @@ To run tests with Hadoop 3.2 instead of Hadoop 2.7, use `--hadoop-profile`.
 
     ./dev/dev-run-integration-tests.sh --hadoop-profile hadoop-3.2
 
+For Java 8u251+, `HTTP2_DISABLE=true` and `spark.kubernetes.driverEnv.HTTP2_DISABLE=true` are required additionally for fabric8 `kubernetes-client` library to talk to Kubernetes clusters. This prevents `KubernetesClientException` when `kubernetes-client` library uses `okhttp` library internally.
+
 The minimum tested version of Minikube is 0.23.0. The kube-dns addon must be enabled. Minikube should
 run with a minimum of 4 CPUs and 6G of memory:
 

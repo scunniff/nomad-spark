@@ -53,6 +53,8 @@ uses Scala {{site.SCALA_BINARY_VERSION}}. You will need to use a compatible Scal
 
 For Java 11, `-Dio.netty.tryReflectionSetAccessible=true` is required additionally for Apache Arrow library. This prevents `java.lang.UnsupportedOperationException: sun.misc.Unsafe or java.nio.DirectByteBuffer.(long, int) not available` when Apache Arrow uses Netty internally.
 
+For Java 8u251+, `HTTP2_DISABLE=true` and `spark.kubernetes.driverEnv.HTTP2_DISABLE=true` are required additionally for fabric8 `kubernetes-client` library to talk to Kubernetes clusters. This prevents `KubernetesClientException` when `kubernetes-client` library uses `okhttp` library internally.
+
 # Running the Examples and Shell
 
 Spark comes with several sample programs.  Scala, Java, Python and R examples are in the
