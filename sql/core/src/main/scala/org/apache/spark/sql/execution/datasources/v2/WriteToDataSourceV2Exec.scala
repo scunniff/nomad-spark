@@ -26,7 +26,6 @@ import org.apache.spark.{SparkEnv, SparkException, TaskContext}
 import org.apache.spark.executor.CommitDeniedException
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.{CannotReplaceMissingTableException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.expressions.Attribute
@@ -383,7 +382,7 @@ trait V2TableWriteExec extends V2CommandExec with UnaryExecNode {
       sparkContext.runJob(
         rdd,
         (context: TaskContext, iter: Iterator[InternalRow]) =>
-          DataWritingSparkTask.run(writeTask, context, iter, useCommitCoordinator),
+          DataWritingSparkTask.run(writerFactory, context, iter, useCommitCoordinator),
         rdd.partitions.indices,
         (index, result: DataWritingSparkTaskResult) => {
           val commitMessage = result.writerCommitMessage
@@ -422,7 +421,7 @@ trait V2TableWriteExec extends V2CommandExec with UnaryExecNode {
 
 object DataWritingSparkTask extends Logging {
   def run(
-      writeTask: DataWriterFactory[InternalRow],
+      writerFactory: DataWriterFactory,
       context: TaskContext,
       iter: Iterator[InternalRow],
       useCommitCoordinator: Boolean): DataWritingSparkTaskResult = {
@@ -431,8 +430,7 @@ object DataWritingSparkTask extends Logging {
     val partId = context.partitionId()
     val taskId = context.taskAttemptId()
     val attemptId = context.attemptNumber()
-    val epochId = Option(context.getLocalProperty(MicroBatchExecution.BATCH_ID_KEY)).getOrElse("0")
-    val dataWriter = writeTask.createDataWriter(partId, taskId, epochId.toLong)
+    val dataWriter = writerFactory.createWriter(partId, taskId)
 
     var count = 0L
     // write the data and commit this writer.

@@ -364,10 +364,10 @@ final class DataStreamWriter[T] private[sql](ds: Dataset[T]) {
       }
 
       df.sparkSession.sessionState.streamingQueryManager.startQuery(
-        options.get("queryName"),
-        options.get("checkpointLocation"),
+        extraOptions.get("queryName"),
+        extraOptions.get("checkpointLocation"),
         df,
-        options,
+        extraOptions.toMap,
         sink,
         outputMode,
         useTempCheckpointLocation = source == "console" || source == "noop",

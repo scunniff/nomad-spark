@@ -507,15 +507,6 @@ abstract class SparkPlan extends QueryPlan[SparkPlan] with Logging with Serializ
   protected[sql] def cleanupResources(): Unit = {
     children.foreach(_.cleanupResources())
   }
-
-  /**
-   * Cleans up the resources used by the physical operator (if any). In general, all the resources
-   * should be cleaned up when the task finishes but operators like SortMergeJoinExec and LimitExec
-   * may want eager cleanup to free up tight resources (e.g., memory).
-   */
-  protected[sql] def cleanupResources(): Unit = {
-    children.foreach(_.cleanupResources())
-  }
 }
 
 trait LeafExecNode extends SparkPlan {

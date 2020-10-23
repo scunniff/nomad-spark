@@ -27,13 +27,17 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.connector.read.{InputPartition, PartitionReader, PartitionReaderFactory}
 import org.apache.spark.sql.vectorized.ColumnarBatch
 
-class DataSourceRDDPartition[T : ClassTag](val index: Int, val inputPartition: InputPartition[T])
+class DataSourceRDDPartition(val index: Int, val inputPartition: InputPartition)
   extends Partition with Serializable
 
-class DataSourceRDD[T: ClassTag](
+// TODO: we should have 2 RDDs: an RDD[InternalRow] for row-based scan, an `RDD[ColumnarBatch]` for
+// columnar scan.
+class DataSourceRDD(
     sc: SparkContext,
-    @transient private val inputPartitions: Seq[InputPartition[T]])
-  extends RDD[T](sc, Nil) {
+    @transient private val inputPartitions: Seq[InputPartition],
+    partitionReaderFactory: PartitionReaderFactory,
+    columnarReads: Boolean)
+  extends RDD[InternalRow](sc, Nil) {
 
   override protected def getPartitions: Array[Partition] = {
     inputPartitions.zipWithIndex.map {
@@ -63,7 +67,7 @@ class DataSourceRDD[T: ClassTag](
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[DataSourceRDDPartition[T]].inputPartition.preferredLocations()
+    castPartition(split).inputPartition.preferredLocations()
   }
 }
 

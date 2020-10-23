@@ -50,7 +50,7 @@ class EpochCoordinatorSuite
     val stream = mock[ContinuousStream]
     writeSupport = mock[StreamingWrite]
     query = mock[ContinuousExecution]
-    orderVerifier = inOrder(writer, query)
+    orderVerifier = inOrder(writeSupport, query)
 
     spark = new TestSparkSession(
     new SparkContext(
@@ -275,12 +275,12 @@ class EpochCoordinatorSuite
   }
 
   private def verifyCommit(epoch: Long): Unit = {
-    orderVerifier.verify(writer).commit(eqTo(epoch), any())
+    orderVerifier.verify(writeSupport).commit(eqTo(epoch), any())
     orderVerifier.verify(query).commit(epoch)
   }
 
   private def verifyNoCommitFor(epoch: Long): Unit = {
-    verify(writer, never()).commit(eqTo(epoch), any())
+    verify(writeSupport, never()).commit(eqTo(epoch), any())
     verify(query, never()).commit(epoch)
   }
 

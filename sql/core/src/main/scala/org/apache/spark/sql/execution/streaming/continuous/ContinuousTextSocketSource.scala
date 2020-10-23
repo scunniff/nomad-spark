@@ -20,10 +20,9 @@ package org.apache.spark.sql.execution.streaming.continuous
 import java.io.{BufferedReader, InputStreamReader, IOException}
 import java.net.Socket
 import java.sql.Timestamp
-import java.util.{Calendar, List => JList}
+import java.util.Calendar
 import javax.annotation.concurrent.GuardedBy
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.ListBuffer
 
 import org.json4s.{DefaultFormats, NoTypeHints}
@@ -72,7 +71,8 @@ class TextSocketContinuousStream(
   @GuardedBy("this")
   private var currentOffset: Int = -1
 
-  private var startOffset: TextSocketOffset = _
+  // Exposed for tests.
+  private[spark] var startOffset: TextSocketOffset = _
 
   private val recordEndpoint = new ContinuousRecordEndpoint(buckets, this)
   @volatile private var endpointRef: RpcEndpointRef = _
@@ -93,11 +93,9 @@ class TextSocketContinuousStream(
     TextSocketOffset(Serialization.read[List[Int]](json))
   }
 
-  override def setStartOffset(offset: java.util.Optional[Offset]): Unit = {
-    this.startOffset = offset
-      .orElse(TextSocketOffset(List.fill(numPartitions)(0)))
-      .asInstanceOf[TextSocketOffset]
-    recordEndpoint.setStartOffsets(startOffset.offsets)
+  override def initialOffset(): Offset = {
+    startOffset = TextSocketOffset(List.fill(numPartitions)(0))
+    startOffset
   }
 
 
@@ -123,9 +121,9 @@ class TextSocketContinuousStream(
 
     startOffset.offsets.zipWithIndex.map {
       case (offset, i) =>
-        TextSocketContinuousInputPartition(
-          endpointName, i, offset, includeTimestamp): InputPartition[InternalRow]
-    }.asJava
+        TextSocketContinuousInputPartition(endpointName, i, offset, includeTimestamp)
+    }.toArray
+  }
 
   override def createContinuousReaderFactory(): ContinuousPartitionReaderFactory = {
     TextSocketReaderFactory
@@ -216,25 +214,30 @@ case class TextSocketContinuousInputPartition(
     driverEndpointName: String,
     partitionId: Int,
     startOffset: Int,
-    includeTimestamp: Boolean)
-extends InputPartition[InternalRow] {
+    includeTimestamp: Boolean) extends InputPartition
 
-  override def createPartitionReader(): InputPartitionReader[InternalRow] =
-    new TextSocketContinuousInputPartitionReader(driverEndpointName, partitionId, startOffset,
-      includeTimestamp)
+
+object TextSocketReaderFactory extends ContinuousPartitionReaderFactory {
+
+  override def createReader(partition: InputPartition): ContinuousPartitionReader[InternalRow] = {
+    val p = partition.asInstanceOf[TextSocketContinuousInputPartition]
+    new TextSocketContinuousPartitionReader(
+      p.driverEndpointName, p.partitionId, p.startOffset, p.includeTimestamp)
+  }
 }
+
 
 /**
  * Continuous text socket input partition reader.
  *
  * Polls the driver endpoint for new records.
  */
-class TextSocketContinuousInputPartitionReader(
+class TextSocketContinuousPartitionReader(
     driverEndpointName: String,
     partitionId: Int,
     startOffset: Int,
     includeTimestamp: Boolean)
-  extends ContinuousInputPartitionReader[InternalRow] {
+  extends ContinuousPartitionReader[InternalRow] {
 
   private val endpoint = RpcUtils.makeDriverRef(
     driverEndpointName,

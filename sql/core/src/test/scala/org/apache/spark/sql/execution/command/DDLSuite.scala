@@ -3053,25 +3053,3 @@ class FakeLocalFsFileSystem extends RawLocalFileSystem {
     aclStatus = new AclStatus.Builder().addEntries(aclSpec).build()
   }
 }
-
-object FakeLocalFsFileSystem {
-  var aclStatus = new AclStatus.Builder().build()
-}
-
-// A fake test local filesystem used to test ACL. It keeps a ACL status. If deletes
-// a path of this filesystem, it will clean up the ACL status. Note that for test purpose,
-// it has only one ACL status for all paths.
-class FakeLocalFsFileSystem extends RawLocalFileSystem {
-  import FakeLocalFsFileSystem._
-
-  override def delete(f: Path, recursive: Boolean): Boolean = {
-    aclStatus = new AclStatus.Builder().build()
-    super.delete(f, recursive)
-  }
-
-  override def getAclStatus(path: Path): AclStatus = aclStatus
-
-  override def setAcl(path: Path, aclSpec: java.util.List[AclEntry]): Unit = {
-    aclStatus = new AclStatus.Builder().addEntries(aclSpec).build()
-  }
-}

@@ -304,7 +304,7 @@ class StreamingQueryListenerSuite extends StreamTest with BeforeAndAfter {
         val input = new MemoryStream[Int](0, sqlContext) {
           override def latestOffset(): OffsetV2 = {
             numTriggers += 1
-            super.getEndOffset
+            super.latestOffset()
           }
         }
         val clock = new StreamManualClock()

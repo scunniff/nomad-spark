@@ -130,6 +130,11 @@ class HigherOrderFunctionsSuite extends SparkFunSuite with ExpressionEvalHelper 
     aggregate(expr, zero, merge, identity)
   }
 
+  def transformValues(expr: Expression, f: (Expression, Expression) => Expression): Expression = {
+    val MapType(kt, vt, vcn) = expr.dataType
+    TransformValues(expr, createLambda(kt, false, vt, vcn, f)).bind(validateBinding)
+  }
+
   test("ArrayTransform") {
     val ai0 = Literal.create(Seq(1, 2, 3), ArrayType(IntegerType, containsNull = false))
     val ai1 = Literal.create(Seq[Integer](1, null, 3), ArrayType(IntegerType, containsNull = true))

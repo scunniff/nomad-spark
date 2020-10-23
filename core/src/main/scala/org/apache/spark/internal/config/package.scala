@@ -270,11 +270,6 @@ package object config {
       .timeConf(TimeUnit.MILLISECONDS)
       .createWithDefaultString("0")
 
-  private[spark] val EXECUTOR_HEARTBEAT_INTERVAL =
-    ConfigBuilder("spark.executor.heartbeatInterval")
-      .timeConf(TimeUnit.MILLISECONDS)
-      .createWithDefaultString("10s")
-
   private[spark] val EXECUTOR_JAVA_OPTIONS =
     ConfigBuilder(SparkLauncher.EXECUTOR_EXTRA_JAVA_OPTIONS)
       .withPrepended(SparkLauncher.EXECUTOR_DEFAULT_JAVA_OPTIONS)

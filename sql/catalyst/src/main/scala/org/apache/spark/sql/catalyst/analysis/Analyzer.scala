@@ -1230,7 +1230,7 @@ class Analyzer(
               attr
             }
           }
-          (oldVersion, oldVersion.copy(output = newOutput))
+          Seq((oldVersion, oldVersion.copy(output = newOutput)))
 
         case oldVersion @ Window(windowExpressions, _, _, child)
             if AttributeSet(windowExpressions.map(_.toAttribute)).intersect(conflictingAttributes)

@@ -73,18 +73,6 @@ class DataSourceV2Suite extends QueryTest with SharedSparkSession with AdaptiveS
   }
 
   test("advanced implementation") {
-    def getReader(query: DataFrame): AdvancedDataSourceV2#Reader = {
-      query.queryExecution.executedPlan.collect {
-        case d: DataSourceV2ScanExec => d.reader.asInstanceOf[AdvancedDataSourceV2#Reader]
-      }.head
-    }
-
-    def getJavaReader(query: DataFrame): JavaAdvancedDataSourceV2#Reader = {
-      query.queryExecution.executedPlan.collect {
-        case d: DataSourceV2ScanExec => d.reader.asInstanceOf[JavaAdvancedDataSourceV2#Reader]
-      }.head
-    }
-
     Seq(classOf[AdvancedDataSourceV2], classOf[JavaAdvancedDataSourceV2]).foreach { cls =>
       withClue(cls.getName) {
         val df = spark.read.format(cls.getName).load()
@@ -144,7 +132,7 @@ class DataSourceV2Suite extends QueryTest with SharedSparkSession with AdaptiveS
   }
 
   test("columnar batch scan implementation") {
-    Seq(classOf[BatchDataSourceV2], classOf[JavaBatchDataSourceV2]).foreach { cls =>
+    Seq(classOf[ColumnarDataSourceV2], classOf[JavaColumnarDataSourceV2]).foreach { cls =>
       withClue(cls.getName) {
         val df = spark.read.format(cls.getName).load()
         checkAnswer(df, (0 until 90).map(i => Row(i, -i)))
@@ -176,25 +164,25 @@ class DataSourceV2Suite extends QueryTest with SharedSparkSession with AdaptiveS
         val df = spark.read.format(cls.getName).load()
         checkAnswer(df, Seq(Row(1, 4), Row(1, 4), Row(3, 6), Row(2, 6), Row(4, 2), Row(4, 2)))
 
-        val groupByColA = df.groupBy('a).agg(sum('b))
+        val groupByColA = df.groupBy('i).agg(sum('j))
         checkAnswer(groupByColA, Seq(Row(1, 8), Row(2, 6), Row(3, 6), Row(4, 4)))
         assert(collectFirst(groupByColA.queryExecution.executedPlan) {
           case e: ShuffleExchangeExec => e
         }.isEmpty)
 
-        val groupByColAB = df.groupBy('a, 'b).agg(count("*"))
+        val groupByColAB = df.groupBy('i, 'j).agg(count("*"))
         checkAnswer(groupByColAB, Seq(Row(1, 4, 2), Row(2, 6, 1), Row(3, 6, 1), Row(4, 2, 2)))
         assert(collectFirst(groupByColAB.queryExecution.executedPlan) {
           case e: ShuffleExchangeExec => e
         }.isEmpty)
 
-        val groupByColB = df.groupBy('b).agg(sum('a))
+        val groupByColB = df.groupBy('j).agg(sum('i))
         checkAnswer(groupByColB, Seq(Row(2, 8), Row(4, 2), Row(6, 5)))
         assert(collectFirst(groupByColB.queryExecution.executedPlan) {
           case e: ShuffleExchangeExec => e
         }.isDefined)
 
-        val groupByAPlusB = df.groupBy('a + 'b).agg(count("*"))
+        val groupByAPlusB = df.groupBy('i + 'j).agg(count("*"))
         checkAnswer(groupByAPlusB, Seq(Row(5, 2), Row(6, 2), Row(8, 1), Row(9, 1)))
         assert(collectFirst(groupByAPlusB.queryExecution.executedPlan) {
           case e: ShuffleExchangeExec => e
@@ -317,12 +305,6 @@ class DataSourceV2Suite extends QueryTest with SharedSparkSession with AdaptiveS
   }
 
   test("SPARK-23301: column pruning with arbitrary expressions") {
-    def getReader(query: DataFrame): AdvancedDataSourceV2#Reader = {
-      query.queryExecution.executedPlan.collect {
-        case d: DataSourceV2ScanExec => d.reader.asInstanceOf[AdvancedDataSourceV2#Reader]
-      }.head
-    }
-
     val df = spark.read.format(classOf[AdvancedDataSourceV2].getName).load()
 
     val q1 = df.select('i + 1)
@@ -449,12 +431,9 @@ object SimpleReaderFactory extends PartitionReaderFactory {
 
       override def get(): InternalRow = InternalRow(current, -current)
 
-    override def planInputPartitions(): JList[InputPartition[InternalRow]] = {
-      java.util.Arrays.asList(new SimpleInputPartition(0, 5))
+      override def close(): Unit = {}
     }
   }
-
-  override def createReader(options: DataSourceOptions): DataSourceReader = new Reader
 }
 
 abstract class SimpleBatchTable extends Table with SupportsRead  {
@@ -545,15 +524,19 @@ class AdvancedScanBuilder extends ScanBuilder
   var requiredSchema = TestingV2Source.schema
   var filters = Array.empty[Filter]
 
-  override def createPartitionReader(): InputPartitionReader[InternalRow] = {
-    new AdvancedInputPartition(start, end, requiredSchema)
+  override def pruneColumns(requiredSchema: StructType): Unit = {
+    this.requiredSchema = requiredSchema
   }
 
-  override def close(): Unit = {}
+  override def readSchema(): StructType = requiredSchema
 
-  override def next(): Boolean = {
-    current += 1
-    current < end
+  override def pushFilters(filters: Array[Filter]): Array[Filter] = {
+    val (supported, unsupported) = filters.partition {
+      case GreaterThan("i", _: Int) => true
+      case _ => false
+    }
+    this.filters = supported
+    unsupported
   }
 
   override def pushedFilters(): Array[Filter] = filters
@@ -612,7 +595,6 @@ class AdvancedReaderFactory(requiredSchema: StructType) extends PartitionReaderF
 
       override def close(): Unit = {}
     }
-    InternalRow.fromSeq(values)
   }
 }
 
@@ -666,43 +648,49 @@ class ColumnarDataSourceV2 extends TestingV2Source {
   }
 }
 
-class BatchInputPartitionReader(start: Int, end: Int)
-  extends InputPartition[ColumnarBatch] with InputPartitionReader[ColumnarBatch] {
-
+object ColumnarReaderFactory extends PartitionReaderFactory {
   private final val BATCH_SIZE = 20
-  private lazy val i = new OnHeapColumnVector(BATCH_SIZE, IntegerType)
-  private lazy val j = new OnHeapColumnVector(BATCH_SIZE, IntegerType)
-  private lazy val batch = new ColumnarBatch(Array(i, j))
 
-  private var current = start
+  override def supportColumnarReads(partition: InputPartition): Boolean = true
 
-  override def createPartitionReader(): InputPartitionReader[ColumnarBatch] = this
-
-  override def next(): Boolean = {
-    i.reset()
-    j.reset()
-
-    var count = 0
-    while (current < end && count < BATCH_SIZE) {
-      i.putInt(count, current)
-      j.putInt(count, -current)
-      current += 1
-      count += 1
-    }
-
-    if (count == 0) {
-      false
-    } else {
-      batch.setNumRows(count)
-      true
-    }
+  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
+    throw new UnsupportedOperationException
   }
 
-  override def get(): ColumnarBatch = {
-    batch
-  }
+  override def createColumnarReader(partition: InputPartition): PartitionReader[ColumnarBatch] = {
+    val RangeInputPartition(start, end) = partition
+    new PartitionReader[ColumnarBatch] {
+      private lazy val i = new OnHeapColumnVector(BATCH_SIZE, IntegerType)
+      private lazy val j = new OnHeapColumnVector(BATCH_SIZE, IntegerType)
+      private lazy val batch = new ColumnarBatch(Array(i, j))
 
-  override def close(): Unit = batch.close()
+      private var current = start
+
+      override def next(): Boolean = {
+        i.reset()
+        j.reset()
+
+        var count = 0
+        while (current < end && count < BATCH_SIZE) {
+          i.putInt(count, current)
+          j.putInt(count, -current)
+          current += 1
+          count += 1
+        }
+
+        if (count == 0) {
+          false
+        } else {
+          batch.setNumRows(count)
+          true
+        }
+      }
+
+      override def get(): ColumnarBatch = batch
+
+      override def close(): Unit = batch.close()
+    }
+  }
 }
 
 class PartitionAwareDataSource extends TestingV2Source {
@@ -734,29 +722,30 @@ class PartitionAwareDataSource extends TestingV2Source {
     override def numPartitions(): Int = 2
 
     override def satisfy(distribution: Distribution): Boolean = distribution match {
-      case c: ClusteredDistribution => c.clusteredColumns.contains("a")
+      case c: ClusteredDistribution => c.clusteredColumns.contains("i")
       case _ => false
     }
   }
 }
 
-class SpecificInputPartitionReader(i: Array[Int], j: Array[Int])
-  extends InputPartition[InternalRow]
-  with InputPartitionReader[InternalRow] {
-  assert(i.length == j.length)
+case class SpecificInputPartition(i: Array[Int], j: Array[Int]) extends InputPartition
 
-  private var current = -1
+object SpecificReaderFactory extends PartitionReaderFactory {
+  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
+    val p = partition.asInstanceOf[SpecificInputPartition]
+    new PartitionReader[InternalRow] {
+      private var current = -1
 
-  override def createPartitionReader(): InputPartitionReader[InternalRow] = this
+      override def next(): Boolean = {
+        current += 1
+        current < p.i.length
+      }
 
-  override def next(): Boolean = {
-    current += 1
-    current < i.length
+      override def get(): InternalRow = InternalRow(p.i(current), p.j(current))
+
+      override def close(): Unit = {}
+    }
   }
-
-  override def get(): InternalRow = InternalRow(i(current), j(current))
-
-  override def close(): Unit = {}
 }
 
 class SchemaReadAttemptException(m: String) extends RuntimeException(m)

@@ -526,14 +526,6 @@ class KryoSerializerSuite extends SparkFunSuite with SharedSparkContext {
     val actual: RoaringBitmap = ser.deserialize(ser.serialize(expected))
     assert(actual === expected)
   }
-
-  test("SPARK-27216: test RoaringBitmap ser/dser with Kryo") {
-    val expected = new RoaringBitmap()
-    expected.add(1787)
-    val ser = new KryoSerializer(conf).newInstance()
-    val actual: RoaringBitmap = ser.deserialize(ser.serialize(expected))
-    assert(actual === expected)
-  }
 }
 
 class KryoSerializerAutoResetDisabledSuite extends SparkFunSuite with SharedSparkContext {

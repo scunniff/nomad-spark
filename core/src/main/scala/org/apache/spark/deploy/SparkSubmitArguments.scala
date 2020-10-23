@@ -19,8 +19,10 @@ package org.apache.spark.deploy
 
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 import java.lang.reflect.InvocationTargetException
+import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.{List => JList}
+import java.util.jar.JarFile
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
@@ -228,28 +230,6 @@ private[deploy] class SparkSubmitArguments(args: Seq[String], env: Map[String, S
     dockerImage = Option(dockerImage).orElse(sparkProperties.get("spark.nomad.dockerImage")).orNull
     monitorUntil = Option(monitorUntil)
       .orElse(sparkProperties.get("spark.nomad.cluster.monitorUntil")).orNull
-    // Try to set main class from JAR if no --class argument is given
-    if (mainClass == null && !isPython && !isR && primaryResource != null) {
-      val uri = new URI(primaryResource)
-      val uriScheme = uri.getScheme()
-
-      uriScheme match {
-        case "file" =>
-          try {
-            Utils.tryWithResource(new JarFile(uri.getPath)) { jar =>
-              // Note that this might still return null if no main-class is set; we catch that later
-              mainClass = jar.getManifest.getMainAttributes.getValue("Main-Class")
-            }
-          } catch {
-            case _: Exception =>
-              error(s"Cannot load main class from JAR $primaryResource")
-          }
-        case _ =>
-          error(
-            s"Cannot load main class from JAR $primaryResource with URI $uriScheme. " +
-            "Please specify a class through --class.")
-      }
-    }
 
     // Global defaults. These should be keep to minimum to avoid confusing behavior.
     master = Option(master).getOrElse("local[*]")
@@ -630,13 +610,6 @@ private[deploy] class SparkSubmitArguments(args: Seq[String], env: Map[String, S
         |  --queue QUEUE_NAME          The YARN queue to submit to (Default: "default").
         |  --archives ARCHIVES         Comma separated list of archives to be extracted into the
         |                              working directory of each executor.
-        |  --principal PRINCIPAL       Principal to be used to login to KDC, while running on
-        |                              secure HDFS.
-        |  --keytab KEYTAB             The full path to the file that contains the keytab for the
-        |                              principal specified above. This keytab will be copied to
-        |                              the node running the Application Master via the Secure
-        |                              Distributed Cache, for renewing the login tickets and the
-        |                              delegation tokens periodically.
         |
         | Nomad only:
         |  --distribution URL          Location of the Spark distribution to use in the cluster

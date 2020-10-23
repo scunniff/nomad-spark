@@ -85,6 +85,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.scalatestplus</groupId>
+      <artifactId>scalatestplus-scalacheck_${scala.binary.version}</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <scope>test</scope>

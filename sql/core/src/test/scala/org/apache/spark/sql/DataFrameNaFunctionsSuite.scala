@@ -460,38 +460,4 @@ class DataFrameNaFunctionsSuite extends QueryTest with SharedSparkSession {
       Row(0, 0L, 0.toShort, 0.toByte, Float.NaN, Double.NaN) ::
       Row(0, 0L, 0.toShort, 0.toByte, Float.NaN, Double.NaN) :: Nil)
   }
-
-  test("SPARK-29890: duplicate names are allowed for fill() if column names are not specified.") {
-    val left = Seq(("1", null), ("3", "4")).toDF("col1", "col2")
-    val right = Seq(("1", "2"), ("3", null)).toDF("col1", "col2")
-    val df = left.join(right, Seq("col1"))
-
-    // If column names are specified, the following fails due to ambiguity.
-    val exception = intercept[AnalysisException] {
-      df.na.fill("hello", Seq("col2"))
-    }
-    assert(exception.getMessage.contains("Reference 'col2' is ambiguous"))
-
-    // If column names are not specified, fill() is applied to all the eligible columns.
-    checkAnswer(
-      df.na.fill("hello"),
-      Row("1", "hello", "2") :: Row("3", "4", "hello") :: Nil)
-  }
-
-  test("SPARK-30065: duplicate names are allowed for drop() if column names are not specified.") {
-    val left = Seq(("1", null), ("3", "4"), ("5", "6")).toDF("col1", "col2")
-    val right = Seq(("1", "2"), ("3", null), ("5", "6")).toDF("col1", "col2")
-    val df = left.join(right, Seq("col1"))
-
-    // If column names are specified, the following fails due to ambiguity.
-    val exception = intercept[AnalysisException] {
-      df.na.drop("any", Seq("col2"))
-    }
-    assert(exception.getMessage.contains("Reference 'col2' is ambiguous"))
-
-    // If column names are not specified, drop() is applied to all the eligible rows.
-    checkAnswer(
-      df.na.drop("any"),
-      Row("5", "6", "6") :: Nil)
-  }
 }

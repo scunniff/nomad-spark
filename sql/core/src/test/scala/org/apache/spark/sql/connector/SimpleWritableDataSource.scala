@@ -23,7 +23,7 @@ import java.util
 import scala.collection.JavaConverters._
 
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.fs.{FileSystem, FSDataInputStream, Path}
+import org.apache.hadoop.fs.{FileSystem, Path}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.InternalRow
@@ -56,13 +56,10 @@ class SimpleWritableDataSource extends SimpleTableProvider with SessionConfigSup
           val name = status.getPath.getName
           name.startsWith("_") || name.startsWith(".")
         }.map { f =>
-          val serializableConf = new SerializableConfiguration(conf)
-          new SimpleCSVInputPartitionReader(
-            f.getPath.toUri.toString,
-            serializableConf): InputPartition[InternalRow]
-        }.toList.asJava
+          CSVInputPartitionReader(f.getPath.toUri.toString)
+        }.toArray
       } else {
-        Collections.emptyList()
+        Array.empty
       }
     }
 
@@ -101,7 +98,7 @@ class SimpleWritableDataSource extends SimpleTableProvider with SessionConfigSup
   class MyBatchWrite(queryId: String, path: String, conf: Configuration) extends BatchWrite {
     override def createBatchWriterFactory(info: PhysicalWriteInfo): DataWriterFactory = {
       SimpleCounter.resetCounter
-      new CSVDataWriterFactory(path, jobId, new SerializableConfiguration(conf))
+      new CSVDataWriterFactory(path, queryId, new SerializableConfiguration(conf))
     }
 
     override def onDataWriterCommit(message: WriterCommitMessage): Unit = {
@@ -110,7 +107,7 @@ class SimpleWritableDataSource extends SimpleTableProvider with SessionConfigSup
 
     override def commit(messages: Array[WriterCommitMessage]): Unit = {
       val finalPath = new Path(path)
-      val jobPath = new Path(new Path(finalPath, "_temporary"), jobId)
+      val jobPath = new Path(new Path(finalPath, "_temporary"), queryId)
       val fs = jobPath.getFileSystem(conf)
       try {
         for (file <- fs.listStatus(jobPath).map(_.getPath)) {
@@ -125,7 +122,7 @@ class SimpleWritableDataSource extends SimpleTableProvider with SessionConfigSup
     }
 
     override def abort(messages: Array[WriterCommitMessage]): Unit = {
-      val jobPath = new Path(new Path(path, "_temporary"), jobId)
+      val jobPath = new Path(new Path(path, "_temporary"), queryId)
       val fs = jobPath.getFileSystem(conf)
       fs.delete(jobPath, true)
     }
@@ -156,35 +153,38 @@ class SimpleWritableDataSource extends SimpleTableProvider with SessionConfigSup
   }
 }
 
-class SimpleCSVInputPartitionReader(path: String, conf: SerializableConfiguration)
-  extends InputPartition[InternalRow] with InputPartitionReader[InternalRow] {
+case class CSVInputPartitionReader(path: String) extends InputPartition
 
-  @transient private var lines: Iterator[String] = _
-  @transient private var currentLine: String = _
-  @transient private var inputStream: FSDataInputStream = _
+class CSVReaderFactory(conf: SerializableConfiguration)
+  extends PartitionReaderFactory {
 
-  override def createPartitionReader(): InputPartitionReader[InternalRow] = {
+  override def createReader(partition: InputPartition): PartitionReader[InternalRow] = {
+    val path = partition.asInstanceOf[CSVInputPartitionReader].path
     val filePath = new Path(path)
     val fs = filePath.getFileSystem(conf.value)
-    inputStream = fs.open(filePath)
-    lines = new BufferedReader(new InputStreamReader(inputStream))
-      .lines().iterator().asScala
-    this
-  }
 
-  override def next(): Boolean = {
-    if (lines.hasNext) {
-      currentLine = lines.next()
-      true
-    } else {
-      false
+    new PartitionReader[InternalRow] {
+      private val inputStream = fs.open(filePath)
+      private val lines = new BufferedReader(new InputStreamReader(inputStream))
+        .lines().iterator().asScala
+
+      private var currentLine: String = _
+
+      override def next(): Boolean = {
+        if (lines.hasNext) {
+          currentLine = lines.next()
+          true
+        } else {
+          false
+        }
+      }
+
+      override def get(): InternalRow = InternalRow(currentLine.split(",").map(_.trim.toLong): _*)
+
+      override def close(): Unit = {
+        inputStream.close()
+      }
     }
-  }
-
-  override def get(): InternalRow = InternalRow(currentLine.split(",").map(_.trim.toLong): _*)
-
-  override def close(): Unit = {
-    inputStream.close()
   }
 }
 
@@ -205,12 +205,11 @@ private[connector] object SimpleCounter {
 }
 
 class CSVDataWriterFactory(path: String, jobId: String, conf: SerializableConfiguration)
-  extends DataWriterFactory[InternalRow] {
+  extends DataWriterFactory {
 
-  override def createDataWriter(
+  override def createWriter(
       partitionId: Int,
-      taskId: Long,
-      epochId: Long): DataWriter[InternalRow] = {
+      taskId: Long): DataWriter[InternalRow] = {
     val jobPath = new Path(new Path(path, "_temporary"), jobId)
     val filePath = new Path(jobPath, s"$jobId-$partitionId-$taskId")
     val fs = filePath.getFileSystem(conf.value)

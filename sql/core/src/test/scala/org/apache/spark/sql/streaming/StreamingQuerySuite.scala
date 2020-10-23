@@ -220,18 +220,10 @@ class StreamingQuerySuite extends StreamTest with BeforeAndAfter with Logging wi
 
       private def dataAdded: Boolean = currentOffset.offset != -1
 
-      // setOffsetRange should take 50 ms the first time it is called after data is added
-      override def setOffsetRange(start: Optional[OffsetV2], end: Optional[OffsetV2]): Unit = {
-        synchronized {
-          if (dataAdded) clock.waitTillTime(1050)
-          super.setOffsetRange(start, end)
-        }
-      }
-
-      // getEndOffset should take 100 ms the first time it is called after data is added
-      override def getEndOffset(): OffsetV2 = synchronized {
-        if (dataAdded) clock.waitTillTime(1150)
-        super.getEndOffset()
+      // latestOffset should take 50 ms the first time it is called after data is added
+      override def latestOffset(): OffsetV2 = synchronized {
+        if (dataAdded) clock.waitTillTime(1050)
+        super.latestOffset()
       }
 
       // getBatch should take 100 ms the first time it is called
@@ -279,16 +271,16 @@ class StreamingQuerySuite extends StreamTest with BeforeAndAfter with Logging wi
       AssertOnQuery(_.status.message === "Waiting for next trigger"),
       AssertOnQuery(_.recentProgress.count(_.numInputRows > 0) === 0),
 
-      // Test status and progress when setOffsetRange is being called
+      // Test status and progress when `latestOffset` is being called
       AddData(inputData, 1, 2),
-      AdvanceManualClock(1000), // time = 1000 to start new trigger, will block on setOffsetRange
+      AdvanceManualClock(1000), // time = 1000 to start new trigger, will block on `latestOffset`
       AssertStreamExecThreadIsWaitingForTime(1050),
       AssertOnQuery(_.status.isDataAvailable === false),
       AssertOnQuery(_.status.isTriggerActive),
       AssertOnQuery(_.status.message.startsWith("Getting offsets from")),
       AssertOnQuery(_.recentProgress.count(_.numInputRows > 0) === 0),
 
-      AdvanceManualClock(50), // time = 1050 to unblock setOffsetRange
+      AdvanceManualClock(50), // time = 1050 to unblock `latestOffset`
       AssertClockTime(1050),
       // will block on `planInputPartitions` that needs 1350
       AssertStreamExecThreadIsWaitingForTime(1150),
@@ -297,8 +289,8 @@ class StreamingQuerySuite extends StreamTest with BeforeAndAfter with Logging wi
       AssertOnQuery(_.status.message === "Processing new data"),
       AssertOnQuery(_.recentProgress.count(_.numInputRows > 0) === 0),
 
-      AdvanceManualClock(200), // time = 1350 to unblock planInputPartitions
-      AssertClockTime(1350),
+      AdvanceManualClock(100), // time = 1150 to unblock `planInputPartitions`
+      AssertClockTime(1150),
       AssertStreamExecThreadIsWaitingForTime(1500), // will block on map task that needs 1500
       AssertOnQuery(_.status.isDataAvailable),
       AssertOnQuery(_.status.isTriggerActive),
@@ -306,7 +298,7 @@ class StreamingQuerySuite extends StreamTest with BeforeAndAfter with Logging wi
       AssertOnQuery(_.recentProgress.count(_.numInputRows > 0) === 0),
 
       // Test status and progress while batch processing has completed
-      AdvanceManualClock(150), // time = 1500 to unblock map task
+      AdvanceManualClock(350), // time = 1500 to unblock map task
       AssertClockTime(1500),
       CheckAnswer(2),
       AssertStreamExecThreadIsWaitingForTime(2000),  // will block until the next trigger
@@ -326,11 +318,10 @@ class StreamingQuerySuite extends StreamTest with BeforeAndAfter with Logging wi
         assert(progress.numInputRows === 2)
         assert(progress.processedRowsPerSecond === 4.0)
 
-        assert(progress.durationMs.get("setOffsetRange") === 50)
-        assert(progress.durationMs.get("getEndOffset") === 100)
-        assert(progress.durationMs.get("queryPlanning") === 200)
+        assert(progress.durationMs.get("latestOffset") === 50)
+        assert(progress.durationMs.get("queryPlanning") === 100)
         assert(progress.durationMs.get("walCommit") === 0)
-        assert(progress.durationMs.get("addBatch") === 150)
+        assert(progress.durationMs.get("addBatch") === 350)
         assert(progress.durationMs.get("triggerExecution") === 500)
 
         assert(progress.sources.length === 1)

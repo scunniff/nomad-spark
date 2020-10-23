@@ -172,9 +172,7 @@
     <!-- for now, not running scalafmt as part of default verify pipeline -->
     <scalafmt.skip>true</scalafmt.skip>
     <codehaus.jackson.version>1.9.13</codehaus.jackson.version>
-    <fasterxml.jackson.version>2.7.9</fasterxml.jackson.version>
-    <fasterxml.jackson-module-scala.version>2.7.9</fasterxml.jackson-module-scala.version>
-    <fasterxml.jackson.databind.version>2.7.9</fasterxml.jackson.databind.version>
+    <fasterxml.jackson.version>2.10.0</fasterxml.jackson.version>
     <snappy.version>1.1.7.5</snappy.version>
     <netlib.java.version>1.1.2</netlib.java.version>
     <commons-codec.version>1.10</commons-codec.version>
@@ -269,20 +267,6 @@
       -->
       <name>GCS Maven Central mirror</name>
       <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <!--
-        This is used as a fallback when the first try fails.
-      -->
-      <id>central</id>
-      <name>Maven Repository</name>
-      <url>https://repo.maven.apache.org/maven2</url>
       <releases>
         <enabled>true</enabled>
       </releases>
@@ -767,7 +751,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${fasterxml.jackson.databind.version}</version>
+        <version>${fasterxml.jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
@@ -779,7 +763,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.module</groupId>
         <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-        <version>${fasterxml.jackson-module-scala.version}</version>
+        <version>${fasterxml.jackson.version}</version>
         <exclusions>
           <exclusion>
             <groupId>com.google.guava</groupId>
@@ -931,6 +915,12 @@
         <groupId>org.scalacheck</groupId>
         <artifactId>scalacheck_${scala.binary.version}</artifactId>
         <version>1.14.2</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.scalatestplus</groupId>
+        <artifactId>scalatestplus-scalacheck_${scala.binary.version}</artifactId>
+        <version>3.1.0.0-RC2</version>
         <scope>test</scope>
       </dependency>
       <dependency>

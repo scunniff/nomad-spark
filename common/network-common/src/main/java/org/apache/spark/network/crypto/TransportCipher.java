@@ -218,8 +218,6 @@ public class TransportCipher {
     private final CryptoOutputStream cos;
     private final EncryptionHandler handler;
     private final long count;
-    private final CryptoOutputStream cos;
-    private final EncryptionHandler handler;
     private long transferred;
 
     // Due to streaming issue CRYPTO-125: https://issues.apache.org/jira/browse/CRYPTO-125, it has

@@ -88,7 +88,7 @@ trait FakeStreamingWriteTable extends Table with SupportsWrite {
     Set(STREAMING_WRITE).asJava
   }
   override def newWriteBuilder(info: LogicalWriteInfo): WriteBuilder = {
-    new FakeWriteBuildert
+    new FakeWriteBuilder
   }
 }
 
@@ -251,11 +251,6 @@ class StreamingDataSourceV2Suite extends StreamTest {
     LastWriteOptions.clear()
   }
 
-  override def afterEach(): Unit = {
-    LastReadOptions.clear()
-    LastWriteOptions.clear()
-  }
-
   val readFormats = Seq(
     "fake-read-microbatch-only",
     "fake-read-continuous-only",
@@ -329,7 +324,7 @@ class StreamingDataSourceV2Suite extends StreamTest {
 
     // Ensure we create a V1 sink with the config. Note the config is a comma separated
     // list, including other fake entries.
-    val fullSinkName = "org.apache.spark.sql.streaming.sources.FakeWriteV1Fallback"
+    val fullSinkName = classOf[FakeWriteSupportProviderV1Fallback].getName
     withSQLConf(SQLConf.DISABLED_V2_STREAMING_WRITERS.key -> s"a,b,c,test,$fullSinkName,d,e") {
       testPositiveCaseWithQuery(
         "fake-read-microbatch-continuous", "fake-write-v1-fallback", Trigger.Once()) { v1Query =>

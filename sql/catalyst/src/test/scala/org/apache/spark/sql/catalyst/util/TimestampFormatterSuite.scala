@@ -30,7 +30,7 @@ import org.apache.spark.unsafe.types.UTF8String
 class TimestampFormatterSuite extends DatetimeFormatterSuite {
 
   override def checkFormatterCreation(pattern: String, isParsing: Boolean): Unit = {
-    TimestampFormatter(pattern, UTC, isParsing)
+    TimestampFormatter.apply(pattern, UTC, isParsing)
   }
 
   override protected def useDateFormatter: Boolean = false

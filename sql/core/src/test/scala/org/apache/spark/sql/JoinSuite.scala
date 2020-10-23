@@ -24,8 +24,6 @@ import scala.collection.mutable.ListBuffer
 
 import org.mockito.Mockito._
 
-import org.mockito.Mockito._
-
 import org.apache.spark.TestUtils.{assertNotSpilled, assertSpilled}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation

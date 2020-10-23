@@ -688,7 +688,7 @@ public abstract class AbstractBytesToBytesMapSuite {
     MemoryMode mode = useOffHeapMemoryAllocator() ? MemoryMode.OFF_HEAP: MemoryMode.ON_HEAP;
     TestMemoryConsumer c1 = new TestMemoryConsumer(taskMemoryManager, mode);
     BytesToBytesMap map =
-      new BytesToBytesMap(taskMemoryManager, blockManager, serializerManager, 1, 0.5, 1024);
+        new BytesToBytesMap(taskMemoryManager, blockManager, serializerManager, 1, 0.5, 1024);
 
     Thread thread = new Thread(() -> {
       int i = 0;
@@ -720,7 +720,7 @@ public abstract class AbstractBytesToBytesMapSuite {
       thread.join();
       for (File spillFile : spillFilesCreated) {
         assertFalse("Spill file " + spillFile.getPath() + " was not cleaned up",
-          spillFile.exists());
+            spillFile.exists());
       }
     }
   }
@@ -730,7 +730,7 @@ public abstract class AbstractBytesToBytesMapSuite {
     // SPARK-29244: BytesToBytesMap.free after a OOM reset operation should not cause failure.
     memoryManager.limit(5000);
     BytesToBytesMap map = new BytesToBytesMap(taskMemoryManager, blockManager, serializerManager,
-      256, 0.5, 4000, false);
+      256, 0.5, 4000);
     // Force OOM on next memory allocation.
     memoryManager.markExecutionAsOutOfMemoryOnce();
     try {

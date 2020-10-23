@@ -54,24 +54,6 @@ object DataSourceUtils {
   }
 
   /**
-   * The key to use for storing partitionBy columns as options.
-   */
-  val PARTITIONING_COLUMNS_KEY = "__partition_columns"
-
-  /**
-   * Utility methods for converting partitionBy columns to options and back.
-   */
-  private implicit val formats = Serialization.formats(NoTypeHints)
-
-  def encodePartitioningColumns(columns: Seq[String]): String = {
-    Serialization.write(columns)
-  }
-
-  def decodePartitioningColumns(str: String): Seq[String] = {
-    Serialization.read[Seq[String]](str)
-  }
-
-  /**
    * Verify if the schema is supported in datasource. This verification should be done
    * in a driver side.
    */

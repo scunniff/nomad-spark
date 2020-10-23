@@ -100,8 +100,6 @@ class UnivocityParser(
 
   private val csvFilters = new CSVFilters(filters, requiredSchema)
 
-  @transient private lazy val timestampParser = new TimestampParser(options.timestampFormat)
-
   // Retrieve the raw record string.
   private def getCurrentInput: UTF8String = {
     val currentContent = tokenizer.getContext.currentParsedContent()

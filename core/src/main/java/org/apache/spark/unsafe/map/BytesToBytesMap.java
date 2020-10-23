@@ -295,9 +295,6 @@ public final class BytesToBytesMap extends MemoryConsumer {
           freePage(pageToFree);
         }
       }
-      if (pageToFree != null) {
-        freePage(pageToFree);
-      }
     }
 
     @Override

@@ -28,7 +28,7 @@ import org.apache.spark.sql.internal.SQLConf.LegacyBehaviorPolicy
 class DateFormatterSuite extends DatetimeFormatterSuite {
 
   override def checkFormatterCreation(pattern: String, isParsing: Boolean): Unit = {
-    DateFormatter(pattern, UTC, isParsing)
+    DateFormatter.apply(pattern, UTC, isParsing)
   }
 
   override protected def useDateFormatter: Boolean = true

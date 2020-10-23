@@ -167,7 +167,7 @@ case class MemoryWriterFactory(schema: StructType)
       partitionId: Int,
       taskId: Long,
       epochId: Long): DataWriter[InternalRow] = {
-    new MemoryDataWriter(partitionId, outputMode, schema)
+    createWriter(partitionId, taskId)
   }
 }
 
@@ -202,4 +202,3 @@ case class MemoryPlan(sink: MemorySink, override val output: Seq[Attribute]) ext
 
   override def computeStats(): Statistics = Statistics(sizePerRow * sink.allData.size)
 }
-

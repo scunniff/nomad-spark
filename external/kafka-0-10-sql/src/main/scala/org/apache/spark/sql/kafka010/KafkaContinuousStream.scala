@@ -25,7 +25,6 @@ import org.apache.kafka.common.TopicPartition
 
 import org.apache.spark.TaskContext
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.connector.read.InputPartition
@@ -187,7 +186,7 @@ object KafkaContinuousReaderFactory extends ContinuousPartitionReaderFactory {
  * @param failOnDataLoss Flag indicating whether data reader should fail if some offsets
  *                       are skipped.
  */
-class KafkaContinuousInputPartitionReader(
+class KafkaContinuousPartitionReader(
     topicPartition: TopicPartition,
     startOffset: Long,
     kafkaParams: ju.Map[String, Object],

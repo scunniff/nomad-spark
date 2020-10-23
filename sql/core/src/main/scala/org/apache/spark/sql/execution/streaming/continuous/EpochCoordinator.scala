@@ -201,7 +201,7 @@ private[continuous] class EpochCoordinator(
       s"and is ready to be committed. Committing epoch $epoch.")
     // Sequencing is important here. We must commit to the writer before recording the commit
     // in the query, or we will end up dropping the commit if we restart in the middle.
-    writer.commit(epoch, messages.toArray)
+    writeSupport.commit(epoch, messages.toArray)
     query.commit(epoch)
   }
 

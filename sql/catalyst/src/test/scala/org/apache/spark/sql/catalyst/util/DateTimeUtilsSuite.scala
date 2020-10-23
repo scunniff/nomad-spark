@@ -25,8 +25,6 @@ import java.util.concurrent.TimeUnit
 
 import org.scalatest.Matchers
 
-import org.apache.commons.lang3.time.FastDateFormat
-
 import org.apache.spark.SparkFunSuite
 import org.apache.spark.sql.catalyst.plans.SQLHelper
 import org.apache.spark.sql.catalyst.util.DateTimeConstants._
@@ -514,7 +512,7 @@ class DateTimeUtilsSuite extends SparkFunSuite with Matchers with SQLHelper {
 
   test("trailing characters while converting string to timestamp") {
     val s = UTF8String.fromString("2019-10-31T10:59:23Z:::")
-    val time = DateTimeUtils.stringToTimestamp(s, DateTimeUtils.defaultTimeZone())
+    val time = DateTimeUtils.stringToTimestamp(s, defaultZoneId)
     assert(time == None)
   }
 
@@ -660,50 +658,5 @@ class DateTimeUtilsSuite extends SparkFunSuite with Matchers with SQLHelper {
       assert(toDate("today", zoneId).get === today)
       assert(toDate("tomorrow CET ", zoneId).get === today + 1)
     }
-  }
-
-  test("formatting timestamp strings up to microsecond precision") {
-    DateTimeTestUtils.outstandingTimezones.foreach { timeZone =>
-      def check(pattern: String, input: String, expected: String): Unit = {
-        val parser = new TimestampParser(FastDateFormat.getInstance(pattern, timeZone, Locale.US))
-        val timestamp = DateTimeUtils.stringToTimestamp(
-          UTF8String.fromString(input), timeZone).get
-        val actual = parser.format(timestamp)
-        assert(actual === expected)
-      }
-
-      check(
-        "yyyy-MM-dd HH:mm:ss.SSSSSSS", "2019-10-14T09:39:07.123456",
-        "2019-10-14 09:39:07.1234560")
-      check(
-        "yyyy-MM-dd HH:mm:ss.SSSSSS", "1960-01-01T09:39:07.123456",
-        "1960-01-01 09:39:07.123456")
-      check(
-        "yyyy-MM-dd HH:mm:ss.SSSSS", "0001-10-14T09:39:07.1",
-        "0001-10-14 09:39:07.10000")
-      check(
-        "yyyy-MM-dd HH:mm:ss.SSSS", "9999-12-31T23:59:59.999",
-        "9999-12-31 23:59:59.9990")
-      check(
-        "yyyy-MM-dd HH:mm:ss.SSS", "1970-01-01T00:00:00.0101",
-        "1970-01-01 00:00:00.010")
-      check(
-        "yyyy-MM-dd HH:mm:ss.SS", "2019-10-14T09:39:07.09",
-        "2019-10-14 09:39:07.09")
-      check(
-        "yyyy-MM-dd HH:mm:ss.S", "2019-10-14T09:39:07.2",
-        "2019-10-14 09:39:07.2")
-      check(
-        "yyyy-MM-dd HH:mm:ss.S", "2019-10-14T09:39:07",
-        "2019-10-14 09:39:07.0")
-      check(
-        "yyyy-MM-dd HH:mm:ss", "2019-10-14T09:39:07.123456",
-        "2019-10-14 09:39:07")
-    }
-  }
-
-  test("toMillis") {
-    assert(DateTimeUtils.toMillis(-9223372036844776001L) === -9223372036844777L)
-    assert(DateTimeUtils.toMillis(-157700927876544L) === -157700927877L)
   }
 }

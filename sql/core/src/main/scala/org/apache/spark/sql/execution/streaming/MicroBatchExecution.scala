@@ -386,13 +386,8 @@ class MicroBatchExecution(
         }
       case (s: MicroBatchStream, _) =>
         updateStatusMessage(s"Getting offsets from $s")
-        reportTimeTaken("setOffsetRange") {
-          // Once v1 streaming source execution is gone, we can refactor this away.
-          // For now, we set the range here to get the source to infer the available end offset,
-          // get that offset, and then set the range again when we later execute.
-          s.setOffsetRange(
-            toJava(availableOffsets.get(s).map(off => s.deserializeOffset(off.json))),
-            Optional.empty())
+        reportTimeTaken("latestOffset") {
+          (s, Option(s.latestOffset()))
         }
       case (s, _) =>
         // for some reason, the compiler is unhappy and thinks the match is not exhaustive
@@ -603,10 +598,6 @@ class MicroBatchExecution(
     } finally {
       awaitProgressLock.unlock()
     }
-  }
-
-  private def toJava(scalaOption: Option[OffsetV2]): Optional[OffsetV2] = {
-    Optional.ofNullable(scalaOption.orNull)
   }
 }
 
