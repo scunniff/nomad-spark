@@ -1220,18 +1220,6 @@ class Analyzer(
           }
           Seq((oldVersion, oldVersion.copy(output = newOutput)))
 
-        case oldVersion: Expand
-            if oldVersion.producedAttributes.intersect(conflictingAttributes).nonEmpty =>
-          val producedAttributes = oldVersion.producedAttributes
-          val newOutput = oldVersion.output.map { attr =>
-            if (producedAttributes.contains(attr)) {
-              attr.newInstance()
-            } else {
-              attr
-            }
-          }
-          Seq((oldVersion, oldVersion.copy(output = newOutput)))
-
         case oldVersion @ Window(windowExpressions, _, _, child)
             if AttributeSet(windowExpressions.map(_.toAttribute)).intersect(conflictingAttributes)
             .nonEmpty =>
