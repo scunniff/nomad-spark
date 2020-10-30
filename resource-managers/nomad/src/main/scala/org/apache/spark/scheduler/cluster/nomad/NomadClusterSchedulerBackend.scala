@@ -167,7 +167,7 @@ private[spark] class NomadClusterSchedulerBackend(
   /**
    * Create a NomadDriverEndpoint.
    */
-  override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
+  protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
     new NomadDriverEndpoint(rpcEnv, properties)
   }
 
