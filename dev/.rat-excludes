@@ -22,6 +22,7 @@ docs
 slaves
 spark-env.cmd
 bootstrap-tooltip.js
+jquery-1.12.4.min.js
 jquery-3.4.1.min.js
 d3.min.js
 dagre-d3.min.js
@@ -29,6 +30,7 @@ graphlib-dot.min.js
 sorttable.js
 vis-timeline-graph2d.min.js
 vis-timeline-graph2d.min.css
+vis-timeline-graph2d.min.css.map
 dataTables.bootstrap.css
 dataTables.bootstrap.min.js
 dataTables.rowsGroup.js
