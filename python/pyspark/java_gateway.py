@@ -96,11 +96,9 @@ def _launch_gateway(conf=None, insecure=False):
                 env["_PYSPARK_CREATE_INSECURE_GATEWAY"] = "1"
 
             # Launch the Java gateway.
-            popen_kwargs = {} if popen_kwargs is None else popen_kwargs
+            popen_kwargs = {'stdin': PIPE, 'env': env}
             # We open a pipe to stdin so that the Java gateway can die when the pipe is broken
-            popen_kwargs['stdin'] = PIPE
             # We always set the necessary environment variables.
-            popen_kwargs['env'] = env
             if not on_windows:
                 # Don't send ctrl-c / SIGINT to the Java gateway:
                 def preexec_func():
