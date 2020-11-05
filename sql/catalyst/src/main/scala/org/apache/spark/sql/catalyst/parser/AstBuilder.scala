@@ -1626,6 +1626,7 @@ class AstBuilder(conf: SQLConf) extends SqlBaseBaseVisitor[AnyRef] with Logging 
     }
   }
 
+
   /**
    * Create a function database (optional) and name pair, for multipartIdentifier.
    * This is used in CREATE FUNCTION, DROP FUNCTION, SHOWFUNCTIONS.
