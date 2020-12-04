@@ -14,7 +14,7 @@ jobs:
         with:
           java-version: '1.8'
       - name: Build Spark Distribution
-        run: ./dev/make-distribution.sh --name hadoop-3.2-nomad-0.9.7-expediagroup-$(date +'%Y%m%d') --pip --tgz -Phadoop-3.2 -Phive -Phive-thriftserver -Pnomad
+        run: ./dev/make-distribution.sh --name hadoop-3.2-nomad-0.9.7-expediagroup-$(date +'%Y%m%d') --pip --tgz -Phadoop-3.2 -Phive -Phive-thriftserver -Pnomad -Phadoop-cloud
       - name: Test Distribution
         run: |
           export VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
