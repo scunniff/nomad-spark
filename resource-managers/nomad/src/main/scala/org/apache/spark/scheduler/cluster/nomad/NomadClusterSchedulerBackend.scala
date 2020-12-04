@@ -121,8 +121,7 @@ private[spark] class NomadClusterSchedulerBackend(
   /**
    * Extend DriverEndpoint with Nomad-specific functionality.
    */
-  protected class NomadDriverEndpoint(rpcEnv: RpcEnv, sparkProperties: Seq[(String, String)])
-    extends DriverEndpoint {
+  protected class NomadDriverEndpoint() extends DriverEndpoint {
 
     override def onStart(): Unit = {
 
@@ -167,8 +166,8 @@ private[spark] class NomadClusterSchedulerBackend(
   /**
    * Create a NomadDriverEndpoint.
    */
-  protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
-    new NomadDriverEndpoint(rpcEnv, properties)
+  override protected def createDriverEndpoint(): DriverEndpoint = {
+    new NomadDriverEndpoint
   }
 
   /**
