@@ -19,9 +19,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.apache.spark</groupId>
+    <groupId>com.expediagroup.nomad.spark</groupId>
     <artifactId>spark-parent_2.12</artifactId>
-    <version>3.0.1</version>
+    <version>3.0.1.1</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
@@ -36,12 +36,12 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.spark</groupId>
+      <groupId>com.expediagroup.nomad.spark</groupId>
       <artifactId>spark-streaming-kinesis-asl_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.spark</groupId>
+      <groupId>com.expediagroup.nomad.spark</groupId>
       <artifactId>spark-streaming_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
@@ -63,9 +63,9 @@
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>2.6.1</version>
-      <!-- 
-         We are being explicit about version here and overriding the 
-         spark default of 2.5.0 because KCL appears to have introduced 
+      <!--
+         We are being explicit about version here and overriding the
+         spark default of 2.5.0 because KCL appears to have introduced
          a dependency on protobuf 2.6.1 somewhere between KCL 1.4.0 and 1.6.1.
        -->
     </dependency>
